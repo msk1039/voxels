@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CircleHelp, Lock, Target } from "lucide-react";
+import { CircleHelp, Lock } from "lucide-react";
 
 import { CompletionDialog } from "@/components/game/completion-dialog";
 import {
@@ -15,6 +15,7 @@ import {
   Grid2DRenderer,
   GridView,
 } from "@/components/renderers/grid-2d/grid-2d-renderer";
+import { VoxelCanvas } from "@/components/renderers/voxel-3d/voxel-canvas";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -76,16 +77,14 @@ function WorkspaceContent({
     );
   }
   return (
-    <div className="flex h-full min-h-[420px] items-center justify-center bg-muted/20 p-8 text-center">
-      <div className="max-w-sm space-y-2">
-        <Target className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
-        <div className="text-sm font-medium">3D renderer is next</div>
-        <p className="text-xs leading-5 text-muted-foreground">
-          The equation and matcher are active. The stylized voxel scene is added
-          in the next implementation stage.
-        </p>
-      </div>
-    </div>
+    <VoxelCanvas
+      grid={level.grid}
+      target={level.target}
+      actual={actual}
+      view={view}
+      hasRun={hasRun}
+      camera={level.camera}
+    />
   );
 }
 

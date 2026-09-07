@@ -240,7 +240,7 @@ const volumeSources: LevelSource[] = [
     solution: "z == 0",
     target: ({ z }) => z === 0,
     hints: ["Every cell in the plane has the same z coordinate.", "Use z == 0."],
-    camera: { position: [12, 10, 12], target: [0, 0, 0] },
+    camera: { position: [16, 13, 16], target: [0, 0, 0] },
   },
   {
     id: "beam",

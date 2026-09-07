@@ -4,6 +4,7 @@ import { ReactElement, useState } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { useProgress } from "@/components/progress/progress-provider";
+import { useSettings } from "@/components/settings/settings-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { GraphicsQuality } from "@/lib/settings";
 
 interface SettingsDialogProps {
   trigger: ReactElement;
@@ -31,6 +40,7 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const { resetProgress } = useProgress();
+  const { settings, setGraphicsQuality } = useSettings();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -55,11 +65,32 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           <div className="rounded-lg border p-3">
             <div className="text-sm font-medium">Graphics quality</div>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Automatic quality selection is connected with the 3D renderer.
+              Auto uses full desktop effects and reduces them on smaller or
+              slower devices.
             </p>
-            <Button variant="outline" size="sm" className="mt-3" disabled>
-              Auto
-            </Button>
+            <Select
+              value={settings.graphicsQuality}
+              onValueChange={(value) =>
+                setGraphicsQuality(value as GraphicsQuality)
+              }
+            >
+              <SelectTrigger className="mt-3 w-40" aria-label="Graphics quality">
+                <SelectValue>
+                  {(value) =>
+                    value === "high"
+                      ? "High"
+                      : value === "reduced"
+                        ? "Reduced"
+                        : "Auto"
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="reduced">Reduced</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="rounded-lg border p-3">

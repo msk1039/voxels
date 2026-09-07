@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ProgressProvider } from "@/components/progress/progress-provider";
+import { SettingsProvider } from "@/components/settings/settings-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -35,7 +36,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <ProgressProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <SettingsProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </SettingsProvider>
         </ProgressProvider>
       </body>
     </html>
