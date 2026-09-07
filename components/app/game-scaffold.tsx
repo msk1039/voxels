@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Box, Grid2X2, Lock } from "lucide-react";
+import { Box, Circle, Grid2X2 } from "lucide-react";
 
 import { SettingsDialog } from "@/components/app/settings-dialog";
 import { buttonVariants } from "@/components/ui/button";
@@ -20,8 +20,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-
-const placeholderLevels = ["Origin", "Divider", "Crossroads", "Corner", "Window"];
+import { getLevelsForMode } from "@/content/levels";
 
 interface GameScaffoldProps {
   mode: "2d" | "3d";
@@ -32,6 +31,7 @@ interface GameScaffoldProps {
 export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
   const Icon = mode === "2d" ? Grid2X2 : Box;
   const trackName = mode === "2d" ? "Plane Lab" : "Volume Lab";
+  const levels = getLevelsForMode(mode);
 
   return (
     <SidebarProvider>
@@ -47,25 +47,16 @@ export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
             <SidebarGroupLabel>Levels</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {placeholderLevels.map((name, index) => {
-                  const id = name.toLowerCase().replaceAll(" ", "-");
-                  const unlocked = index === 0;
+                {levels.map((level) => {
                   return (
-                    <SidebarMenuItem key={name}>
-                      {unlocked ? (
-                        <SidebarMenuButton
-                          render={<Link href={`/play/${mode}/${id}`} />}
-                          isActive={levelId === id}
-                        >
-                          <span>{index + 1}</span>
-                          <span>{name}</span>
-                        </SidebarMenuButton>
-                      ) : (
-                        <SidebarMenuButton disabled>
-                          <Lock aria-hidden="true" />
-                          <span>{name}</span>
-                        </SidebarMenuButton>
-                      )}
+                    <SidebarMenuItem key={level.id}>
+                      <SidebarMenuButton
+                        render={<Link href={`/play/${mode}/${level.id}`} />}
+                        isActive={levelId === level.id}
+                      >
+                        <Circle className="size-2.5" aria-hidden="true" />
+                        <span>{level.title}</span>
+                      </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
                 })}
