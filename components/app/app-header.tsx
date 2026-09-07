@@ -1,12 +1,20 @@
+"use client";
+
 import Link from "next/link";
-import { Box, Settings } from "lucide-react";
+import { Box, Cuboid, Settings } from "lucide-react";
 
 import { SettingsDialog } from "@/components/app/settings-dialog";
-import { buttonVariants } from "@/components/ui/button";
+import { useProgress } from "@/components/progress/progress-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { countEarnedBlocks } from "@/lib/progress";
 
 export function AppHeader() {
+  const { progress } = useProgress();
+  const earnedBlocks = countEarnedBlocks(progress);
+
   return (
     <header className="flex h-14 items-center border-b bg-background px-4 sm:px-6">
       <Link href="/" className="flex items-center gap-2 font-medium">
@@ -28,12 +36,16 @@ export function AppHeader() {
         </Link>
       </nav>
       <div className="ml-auto">
+        <Badge variant="outline" className="mr-2 hidden sm:inline-flex">
+          <Cuboid aria-hidden="true" />
+          {earnedBlocks} / 72
+        </Badge>
         <SettingsDialog
           trigger={
-            <span className={buttonVariants({ variant: "ghost", size: "icon" })}>
+            <Button variant="ghost" size="icon">
               <Settings aria-hidden="true" />
               <span className="sr-only">Open settings</span>
-            </span>
+            </Button>
           }
         />
       </div>

@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { Box, Circle, Grid2X2 } from "lucide-react";
+import { Box, CheckCircle2, Circle, Grid2X2, Lock } from "lucide-react";
 
 import { SettingsDialog } from "@/components/app/settings-dialog";
-import { buttonVariants } from "@/components/ui/button";
+import { useProgress } from "@/components/progress/progress-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
@@ -21,6 +25,11 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getLevelsForMode } from "@/content/levels";
+import {
+  countCompleted,
+  isLevelUnlocked,
+  levelProgressKey,
+} from "@/lib/progress";
 
 interface GameScaffoldProps {
   mode: "2d" | "3d";
@@ -29,9 +38,11 @@ interface GameScaffoldProps {
 }
 
 export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
+  const { progress } = useProgress();
   const Icon = mode === "2d" ? Grid2X2 : Box;
   const trackName = mode === "2d" ? "Plane Lab" : "Volume Lab";
   const levels = getLevelsForMode(mode);
+  const completed = countCompleted(progress, mode);
 
   return (
     <SidebarProvider>
@@ -48,15 +59,29 @@ export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {levels.map((level) => {
+                  const levelProgress =
+                    progress.levels[levelProgressKey(mode, level.id)];
+                  const unlocked = isLevelUnlocked(level, progress);
                   return (
                     <SidebarMenuItem key={level.id}>
-                      <SidebarMenuButton
-                        render={<Link href={`/play/${mode}/${level.id}`} />}
-                        isActive={levelId === level.id}
-                      >
-                        <Circle className="size-2.5" aria-hidden="true" />
-                        <span>{level.title}</span>
-                      </SidebarMenuButton>
+                      {unlocked ? (
+                        <SidebarMenuButton
+                          render={<Link href={`/play/${mode}/${level.id}`} />}
+                          isActive={levelId === level.id}
+                        >
+                          {levelProgress?.completed ? (
+                            <CheckCircle2 aria-hidden="true" />
+                          ) : (
+                            <Circle className="size-2.5" aria-hidden="true" />
+                          )}
+                          <span>{level.title}</span>
+                        </SidebarMenuButton>
+                      ) : (
+                        <SidebarMenuButton disabled>
+                          <Lock aria-hidden="true" />
+                          <span>{level.title}</span>
+                        </SidebarMenuButton>
+                      )}
                     </SidebarMenuItem>
                   );
                 })}
@@ -73,6 +98,9 @@ export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
           <SidebarTrigger />
           <Separator orientation="vertical" className="mx-3 h-5" />
           <span className="text-sm font-medium">{trackName}</span>
+          <Badge variant="outline" className="ml-3 hidden sm:inline-flex">
+            {completed} / {levels.length}
+          </Badge>
           <nav className="ml-4 hidden items-center gap-1 sm:flex" aria-label="Game modes">
             <Link
               href="/play/2d/origin"
@@ -93,9 +121,9 @@ export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
           <div className="ml-auto">
             <SettingsDialog
               trigger={
-                <span className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <Button variant="outline" size="sm">
                   Settings
-                </span>
+                </Button>
               }
             />
           </div>

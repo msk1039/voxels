@@ -1,35 +1,17 @@
 import Link from "next/link";
-import { Box, Grid2X2, MoveRight } from "lucide-react";
 
 import { AppHeader } from "@/components/app/app-header";
+import { HomeTracks } from "@/components/app/home-tracks";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-const tracks = [
-  {
-    title: "Plane Lab",
-    description: "Learn the coordinate grid by building shapes with x and y.",
-    href: "/play/2d/origin",
-    count: "12 levels",
-    icon: Grid2X2,
-  },
-  {
-    title: "Volume Lab",
-    description: "Add z and turn equations into three-dimensional voxel models.",
-    href: "/play/3d/slice",
-    count: "12 levels",
-    icon: Box,
-  },
-];
 
 export default function Home() {
   return (
@@ -47,31 +29,7 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2" aria-label="Game tracks">
-          {tracks.map((track) => {
-            const Icon = track.icon;
-            return (
-              <Card key={track.href}>
-                <CardHeader>
-                  <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-muted">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </div>
-                  <CardTitle>{track.title}</CardTitle>
-                  <CardDescription>{track.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <span className="text-xs text-muted-foreground">{track.count}</span>
-                </CardContent>
-                <CardFooter>
-                  <Link href={track.href} className={cn(buttonVariants(), "ml-auto")}>
-                    Start {track.title}
-                    <MoveRight data-icon="inline-end" aria-hidden="true" />
-                  </Link>
-                </CardFooter>
-              </Card>
-            );
-          })}
-        </section>
+        <HomeTracks />
 
         <Card size="sm">
           <CardHeader>
