@@ -6,8 +6,10 @@ import { Vector3 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { GridSpec } from "@/lib/grid";
 
 import { createClayTexture } from "./clay-texture";
+import { CoordinateGuide } from "./coordinate-guide";
 import {
   CameraPose,
   HoveredVoxel,
@@ -20,6 +22,7 @@ import { WorldLighting } from "./world-lighting";
 
 interface VoxelWorldProps {
   controlsRef: React.RefObject<CameraControls | null>;
+  grid: GridSpec;
   groups: VoxelGroup[];
   quality: RenderQuality;
   interactive?: boolean;
@@ -31,6 +34,7 @@ interface VoxelWorldProps {
 
 export function VoxelWorld({
   controlsRef,
+  grid,
   groups,
   quality,
   interactive = true,
@@ -102,6 +106,7 @@ export function VoxelWorld({
         maxPolarAngle={Math.PI / 2.03}
       />
       <WorldLighting quality={quality} />
+      <CoordinateGuide grid={grid} showScale={interactive} />
       {groups.map((group) => (
         <VoxelInstances
           key={`${group.id}:${group.cells.length}`}

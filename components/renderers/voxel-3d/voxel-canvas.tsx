@@ -187,6 +187,7 @@ export function VoxelCanvas({
         ) : null}
         <VoxelWorld
           controlsRef={controls}
+          grid={grid}
           groups={groups}
           quality={quality}
           interactive={!preview}
