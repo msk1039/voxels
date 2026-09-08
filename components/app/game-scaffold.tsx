@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Box, CheckCircle2, Circle, Grid2X2, Lock } from "lucide-react";
+import { Box, CheckCircle2, Circle, Grid2X2 } from "lucide-react";
 
 import { SettingsDialog } from "@/components/app/settings-dialog";
 import { useProgress } from "@/components/progress/progress-provider";
@@ -25,11 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getLevelsForMode } from "@/content/levels";
-import {
-  countCompleted,
-  isLevelUnlocked,
-  levelProgressKey,
-} from "@/lib/progress";
+import { countCompleted, levelProgressKey } from "@/lib/progress";
 
 interface GameScaffoldProps {
   mode: "2d" | "3d";
@@ -61,27 +57,19 @@ export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
                 {levels.map((level) => {
                   const levelProgress =
                     progress.levels[levelProgressKey(mode, level.id)];
-                  const unlocked = isLevelUnlocked(level, progress);
                   return (
                     <SidebarMenuItem key={level.id}>
-                      {unlocked ? (
-                        <SidebarMenuButton
-                          render={<Link href={`/play/${mode}/${level.id}`} />}
-                          isActive={levelId === level.id}
-                        >
-                          {levelProgress?.completed ? (
-                            <CheckCircle2 aria-hidden="true" />
-                          ) : (
-                            <Circle className="size-2.5" aria-hidden="true" />
-                          )}
-                          <span>{level.title}</span>
-                        </SidebarMenuButton>
-                      ) : (
-                        <SidebarMenuButton disabled>
-                          <Lock aria-hidden="true" />
-                          <span>{level.title}</span>
-                        </SidebarMenuButton>
-                      )}
+                      <SidebarMenuButton
+                        render={<Link href={`/play/${mode}/${level.id}`} />}
+                        isActive={levelId === level.id}
+                      >
+                        {levelProgress?.completed ? (
+                          <CheckCircle2 aria-hidden="true" />
+                        ) : (
+                          <Circle className="size-2.5" aria-hidden="true" />
+                        )}
+                        <span>{level.title}</span>
+                      </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
                 })}

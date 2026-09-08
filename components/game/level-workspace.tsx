@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Code2, Lock } from "lucide-react";
+import { Code2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -23,7 +22,7 @@ import {
   VoxelTransition,
 } from "@/components/renderers/voxel-3d/types";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -44,19 +43,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LevelDefinition,
   getLevel,
-  getLevelsForMode,
   getNextLevel,
 } from "@/content/levels";
 import { useGridWorker } from "@/hooks/use-grid-worker";
 import { useIsDesktop } from "@/hooks/use-desktop";
 import { EquationError, EquationMode, getErrorLocation } from "@/lib/equation";
 import { CellMap, diffCellMaps, matchCells } from "@/lib/grid";
-import {
-  LevelCompletion,
-  isLevelUnlocked,
-  levelProgressKey,
-} from "@/lib/progress";
-import { cn } from "@/lib/utils";
+import { LevelCompletion, levelProgressKey } from "@/lib/progress";
 
 interface LevelWorkspaceProps {
   mode: EquationMode;
@@ -169,38 +162,9 @@ function LevelInfoPanel({
 }
 
 export function LevelWorkspace({ mode, levelId }: LevelWorkspaceProps) {
-  const { progress, completeLevel } = useProgress();
+  const { completeLevel } = useProgress();
   const level = getLevel(mode, levelId);
   if (!level) return null;
-
-  if (!isLevelUnlocked(level, progress)) {
-    const previous = getLevel(mode, getPreviousLevelId(level));
-    return (
-      <div className="flex h-[calc(100svh-5.5rem)] items-center justify-center rounded-xl border bg-background p-6">
-        <Card className="max-w-sm">
-          <CardHeader>
-            <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-muted">
-              <Lock className="size-4" aria-hidden="true" />
-            </div>
-            <CardTitle>Level locked</CardTitle>
-            <CardDescription>
-              Complete {previous?.title ?? "the previous level"} to unlock {level.title}.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {previous ? (
-              <Link
-                href={`/play/${mode}/${previous.id}`}
-                className={cn(buttonVariants(), "w-full")}
-              >
-                Open {previous.title}
-              </Link>
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <ActiveLevel
@@ -208,14 +172,6 @@ export function LevelWorkspace({ mode, levelId }: LevelWorkspaceProps) {
       level={level}
       completeLevel={completeLevel}
     />
-  );
-}
-
-function getPreviousLevelId(level: LevelDefinition) {
-  return (
-    getLevelsForMode(level.mode).find(
-      (candidate) => candidate.order === level.order - 1
-    )?.id ?? ""
   );
 }
 
