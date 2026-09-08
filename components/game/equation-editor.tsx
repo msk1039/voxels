@@ -59,13 +59,18 @@ export function EquationEditor({
           onKeyDown={handleKeyDown}
           className={cn(
             "font-mono text-[13px] leading-5",
-            docked ? "min-h-16 resize-none" : "min-h-32 resize-y"
+            docked
+              ? "min-h-16 resize-none rounded-[8px] [corner-shape:squircle]"
+              : "min-h-32 resize-y [corner-shape:squircle]"
           )}
           spellCheck={false}
           aria-invalid={Boolean(error)}
         />
         {error ? (
-          <Alert variant="destructive">
+          <Alert
+            variant="destructive"
+            className={cn(docked && "rounded-[8px] [corner-shape:squircle]")}
+          >
             <TriangleAlert aria-hidden="true" />
             <AlertTitle>Equation error</AlertTitle>
             <AlertDescription>
@@ -74,13 +79,21 @@ export function EquationEditor({
           </Alert>
         ) : null}
         <div className="flex gap-2">
-          <Button className="flex-1" onClick={onRun} disabled={pending || !value.trim()}>
+          <Button
+            className={cn(
+              "flex-1",
+              docked && "rounded-[8px] [corner-shape:squircle]"
+            )}
+            onClick={onRun}
+            disabled={pending || !value.trim()}
+          >
             <Play data-icon="inline-start" aria-hidden="true" />
             {pending ? "Running…" : "Run equation"}
           </Button>
           <Button
             variant="outline"
             size="icon"
+            className={cn(docked && "rounded-[8px] [corner-shape:squircle]")}
             onClick={() => onChange(starterExpression)}
             aria-label="Restore starter equation"
           >

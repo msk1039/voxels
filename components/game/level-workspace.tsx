@@ -8,7 +8,6 @@ import { CompletionDialog } from "@/components/game/completion-dialog";
 import {
   EditorError,
   EquationEditor,
-  EquationReference,
 } from "@/components/game/equation-editor";
 import { LevelHintsDialog } from "@/components/game/level-hints-dialog";
 import { MatchSummary } from "@/components/game/match-summary";
@@ -131,7 +130,7 @@ interface LevelInfoPanelProps {
   match: ReturnType<typeof matchCells>;
   hasRun: boolean;
   onHintOpened: () => void;
-  showReference?: boolean;
+  className?: string;
 }
 
 function LevelInfoPanel({
@@ -139,15 +138,20 @@ function LevelInfoPanel({
   match,
   hasRun,
   onHintOpened,
-  showReference = false,
+  className,
 }: LevelInfoPanelProps) {
   const coverage = hasRun ? Math.round(match.targetCoverage * 100) : 0;
   return (
-    <Card size="sm">
+    <Card size="sm" className={className}>
       <CardHeader>
         <div className="mb-1 flex items-center gap-2">
           <Badge variant="outline">Level {level.order}</Badge>
-          <span className="text-xs text-muted-foreground">{level.concept}</span>
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {level.concept}
+          </span>
+          <div className="ml-auto">
+            <LevelHintsDialog hints={level.hints} onOpen={onHintOpened} />
+          </div>
         </div>
         <CardTitle>{level.title}</CardTitle>
         <CardDescription>{level.objective}</CardDescription>
@@ -158,10 +162,6 @@ function LevelInfoPanel({
           <ProgressValue />
         </Progress>
         <MatchSummary match={match} hasRun={hasRun} />
-        {showReference ? <EquationReference /> : null}
-        <div className="flex justify-end">
-          <LevelHintsDialog hints={level.hints} onOpen={onHintOpened} />
-        </div>
       </CardContent>
     </Card>
   );
@@ -325,13 +325,13 @@ function ActiveLevel({
     }
   }
 
-  const levelInfo = (showReference = false) => (
+  const levelInfo = (className?: string) => (
     <LevelInfoPanel
       level={level}
       match={match}
       hasRun={hasRun}
       onHintOpened={() => setUsedHint(true)}
-      showReference={showReference}
+      className={className}
     />
   );
 
@@ -373,14 +373,14 @@ function ActiveLevel({
   return (
     <>
       {desktop ? (
-        <div className="grid h-[calc(100svh-5.5rem)] grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] overflow-hidden rounded-xl border bg-background">
+        <div className="grid h-[calc(100svh-5.5rem)] grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] overflow-hidden rounded-[22px] border bg-background [corner-shape:squircle]">
           <section
             className="relative min-w-0 overflow-hidden border-r"
             aria-label="Your render"
           >
             {renderer(false, "compare", setCameraPose)}
             <div className="pointer-events-none absolute inset-x-4 bottom-4 z-10 flex justify-center">
-              <div className="pointer-events-auto w-full max-w-2xl rounded-xl border bg-background p-3 shadow-md">
+              <div className="pointer-events-auto w-full max-w-2xl rounded-[20px] border bg-background p-3 shadow-md [corner-shape:squircle]">
                 <EquationEditor
                   value={source}
                   starterExpression={level.starterExpression}
@@ -417,18 +417,22 @@ function ActiveLevel({
               </div>
             </section>
             <section
-              className="min-h-0 overflow-y-auto p-3"
+              className="min-h-0 overflow-hidden p-3"
               aria-label="Level information"
             >
-              {levelInfo(true)}
+              {levelInfo(
+                "h-full rounded-[10px] [corner-shape:squircle]"
+              )}
             </section>
           </div>
         </div>
       ) : (
         <div className="space-y-3">
-          <section aria-label="Level information">{levelInfo()}</section>
+          <section aria-label="Level information">
+            {levelInfo("rounded-[20px] [corner-shape:squircle]")}
+          </section>
           <section
-            className="relative h-[540px] overflow-hidden rounded-xl border bg-background"
+            className="relative h-[540px] overflow-hidden rounded-[22px] border bg-background [corner-shape:squircle]"
             aria-label="Render workspace"
           >
             {renderer(true, view)}

@@ -26,7 +26,15 @@ export function LevelHintsDialog({ hints, onOpen }: LevelHintsDialogProps) {
         if (open) onOpen();
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+      <DialogTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-[6px] [corner-shape:squircle]"
+          />
+        }
+      >
         <Lightbulb data-icon="inline-start" aria-hidden="true" />
         Hints
       </DialogTrigger>

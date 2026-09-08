@@ -22,7 +22,7 @@ const items = [
 export function MatchSummary({ match, hasRun }: MatchSummaryProps) {
   if (!hasRun) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 rounded-[6px] border px-3 py-2 text-xs text-muted-foreground [corner-shape:squircle]">
         <CircleDashed className="size-4" aria-hidden="true" />
         Run the equation to compare your result.
       </div>
@@ -32,7 +32,10 @@ export function MatchSummary({ match, hasRun }: MatchSummaryProps) {
   return (
     <div className="grid grid-cols-2 gap-2" aria-label="Match summary">
       {items.map(({ key, label, icon: Icon, color }) => (
-        <div key={key} className="flex items-center gap-2 rounded-lg border px-2.5 py-2">
+        <div
+          key={key}
+          className="flex items-center gap-2 rounded-[6px] border px-2.5 py-2 [corner-shape:squircle]"
+        >
           <Icon className={`size-3.5 ${color}`} aria-hidden="true" />
           <span className="text-xs text-muted-foreground">{label}</span>
           <span className="ml-auto text-xs font-medium tabular-nums">
