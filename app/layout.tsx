@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ProgressProvider } from "@/components/progress/progress-provider";
 import { SettingsProvider } from "@/components/settings/settings-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -37,7 +38,10 @@ export default function RootLayout({
       >
         <ProgressProvider>
           <SettingsProvider>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+            </TooltipProvider>
           </SettingsProvider>
         </ProgressProvider>
       </body>
