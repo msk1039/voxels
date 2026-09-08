@@ -11,10 +11,12 @@ import { ACESFilmicToneMapping, NoToneMapping, SRGBColorSpace } from "three";
 import { useSettings } from "@/components/settings/settings-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useDevicePixelRatio } from "@/hooks/use-device-pixel-ratio";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CellMap, GridSpec } from "@/lib/grid";
 
 import { GridView } from "../grid-2d/grid-2d-renderer";
+import { FrameLimiter } from "./frame-limiter";
 import { HoveredVoxel, RenderQuality } from "./types";
 import { createVoxelGroups } from "./voxel-groups";
 import { VoxelWorld } from "./voxel-world";
@@ -47,6 +49,7 @@ export function VoxelCanvas({
   const controls = useRef<CameraControls>(null);
   const { settings } = useSettings();
   const mobile = useIsMobile();
+  const devicePixelRatio = useDevicePixelRatio();
   const [performanceReduced, setPerformanceReduced] = useState(false);
   const [hovered, setHovered] = useState<HoveredVoxel | null>(null);
   const groups = useMemo(
@@ -58,6 +61,26 @@ export function VoxelCanvas({
   if (settings.graphicsQuality === "high") quality = "high";
   else if (settings.graphicsQuality === "reduced") quality = "reduced";
   else quality = mobile || performanceReduced ? "reduced" : "high";
+
+  const selectedScale =
+    settings.renderScale === "full"
+      ? 1
+      : settings.renderScale === "balanced"
+        ? 0.8
+        : settings.renderScale === "performance"
+          ? 0.65
+          : performanceReduced
+            ? 0.8
+            : 1;
+  const dprLimit = quality === "high" ? 1.5 : 1;
+  const renderDpr = Math.max(
+    0.6,
+    Math.min(devicePixelRatio, dprLimit) * selectedScale
+  );
+  const explicitFrameRate =
+    settings.frameRate === "auto"
+      ? null
+      : (Number(settings.frameRate) as 30 | 60);
 
   function moveCamera(position: [number, number, number]) {
     void controls.current?.setLookAt(
@@ -71,7 +94,8 @@ export function VoxelCanvas({
     <div className="relative h-full min-h-[420px] overflow-hidden bg-muted/20">
       <Canvas
         style={{ position: "absolute", inset: 0 }}
-        dpr={quality === "high" ? [1, 2] : [1, 1.25]}
+        dpr={renderDpr}
+        frameloop={explicitFrameRate ? "never" : "always"}
         camera={{
           position: camera.position,
           fov: 34,
@@ -88,7 +112,11 @@ export function VoxelCanvas({
         }}
         aria-label={`${view} three-dimensional voxel grid from ${grid.min} to ${grid.max}`}
       >
-        {settings.graphicsQuality === "auto" && !mobile ? (
+        {explicitFrameRate ? <FrameLimiter fps={explicitFrameRate} /> : null}
+        {(settings.graphicsQuality === "auto" ||
+          settings.renderScale === "auto") &&
+        !explicitFrameRate &&
+        !mobile ? (
           <PerformanceMonitor
             flipflops={2}
             onDecline={() => setPerformanceReduced(true)}
@@ -109,6 +137,8 @@ export function VoxelCanvas({
               distanceFalloff={0.8}
               intensity={1.35}
               quality="high"
+              halfRes
+              depthAwareUpsampling
             />
             <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
           </EffectComposer>

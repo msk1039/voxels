@@ -11,7 +11,9 @@ import {
 import { SETTINGS_STORAGE_KEY } from "@/lib/progress";
 import {
   DEFAULT_SETTINGS,
+  FrameRate,
   GraphicsQuality,
+  RenderScale,
   SettingsState,
   loadSettings,
   saveSettings,
@@ -20,6 +22,8 @@ import {
 interface SettingsContextValue {
   settings: SettingsState;
   setGraphicsQuality: (quality: GraphicsQuality) => void;
+  setRenderScale: (scale: RenderScale) => void;
+  setFrameRate: (rate: FrameRate) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -73,7 +77,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     () => ({
       settings,
       setGraphicsQuality: (graphicsQuality) => {
-        writeSettings({ schemaVersion: 1, graphicsQuality });
+        writeSettings({ ...readBrowserSettings(), graphicsQuality });
+      },
+      setRenderScale: (renderScale) => {
+        writeSettings({ ...readBrowserSettings(), renderScale });
+      },
+      setFrameRate: (frameRate) => {
+        writeSettings({ ...readBrowserSettings(), frameRate });
       },
     }),
     [settings]

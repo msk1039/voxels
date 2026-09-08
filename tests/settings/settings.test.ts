@@ -27,11 +27,32 @@ describe("local settings", () => {
     );
   });
 
-  it("persists the selected graphics quality", () => {
+  it("migrates older settings with safe render defaults", () => {
+    expect(
+      parseSettings({ schemaVersion: 1, graphicsQuality: "high" })
+    ).toEqual({
+      schemaVersion: 1,
+      graphicsQuality: "high",
+      renderScale: "auto",
+      frameRate: "auto",
+    });
+  });
+
+  it("persists the selected render controls", () => {
     const storage = new MemoryStorage();
-    saveSettings(storage, { schemaVersion: 1, graphicsQuality: "reduced" });
+    saveSettings(storage, {
+      schemaVersion: 1,
+      graphicsQuality: "reduced",
+      renderScale: "balanced",
+      frameRate: "30",
+    });
 
     expect(storage.getItem(SETTINGS_STORAGE_KEY)).toContain("reduced");
-    expect(loadSettings(storage).graphicsQuality).toBe("reduced");
+    expect(loadSettings(storage)).toEqual({
+      schemaVersion: 1,
+      graphicsQuality: "reduced",
+      renderScale: "balanced",
+      frameRate: "30",
+    });
   });
 });

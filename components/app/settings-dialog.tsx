@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GraphicsQuality } from "@/lib/settings";
+import { FrameRate, GraphicsQuality, RenderScale } from "@/lib/settings";
 
 interface SettingsDialogProps {
   trigger: ReactElement;
@@ -40,7 +41,12 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const { resetProgress } = useProgress();
-  const { settings, setGraphicsQuality } = useSettings();
+  const {
+    settings,
+    setGraphicsQuality,
+    setRenderScale,
+    setFrameRate,
+  } = useSettings();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -68,29 +74,85 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               Auto uses full desktop effects and reduces them on smaller or
               slower devices.
             </p>
-            <Select
-              value={settings.graphicsQuality}
-              onValueChange={(value) =>
-                setGraphicsQuality(value as GraphicsQuality)
-              }
-            >
-              <SelectTrigger className="mt-3 w-40" aria-label="Graphics quality">
-                <SelectValue>
-                  {(value) =>
-                    value === "high"
-                      ? "High"
-                      : value === "reduced"
-                        ? "Reduced"
-                        : "Auto"
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="graphics-quality">Effects</Label>
+                <Select
+                  value={settings.graphicsQuality}
+                  onValueChange={(value) =>
+                    setGraphicsQuality(value as GraphicsQuality)
                   }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Auto</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="reduced">Reduced</SelectItem>
-              </SelectContent>
-            </Select>
+                >
+                  <SelectTrigger id="graphics-quality" className="w-full">
+                    <SelectValue>
+                      {(value) =>
+                        value === "high"
+                          ? "High"
+                          : value === "reduced"
+                            ? "Reduced"
+                            : "Auto"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="reduced">Reduced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="render-scale">Resolution</Label>
+                <Select
+                  value={settings.renderScale}
+                  onValueChange={(value) =>
+                    setRenderScale(value as RenderScale)
+                  }
+                >
+                  <SelectTrigger id="render-scale" className="w-full">
+                    <SelectValue>
+                      {(value) =>
+                        value === "full"
+                          ? "100%"
+                          : value === "balanced"
+                            ? "80%"
+                            : value === "performance"
+                              ? "65%"
+                              : "Auto"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="full">100%</SelectItem>
+                    <SelectItem value="balanced">80%</SelectItem>
+                    <SelectItem value="performance">65%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="frame-rate">Frame rate</Label>
+                <Select
+                  value={settings.frameRate}
+                  onValueChange={(value) => setFrameRate(value as FrameRate)}
+                >
+                  <SelectTrigger id="frame-rate" className="w-full">
+                    <SelectValue>
+                      {(value) =>
+                        value === "60" ? "60 FPS" : value === "30" ? "30 FPS" : "Auto"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="60">60 FPS</SelectItem>
+                    <SelectItem value="30">30 FPS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-lg border p-3">

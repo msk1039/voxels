@@ -1,14 +1,34 @@
 import { SETTINGS_STORAGE_KEY } from "@/lib/progress";
 
-import { GraphicsQuality, SettingsState } from "./types";
+import {
+  FrameRate,
+  GraphicsQuality,
+  RenderScale,
+  SettingsState,
+} from "./types";
 
 export const DEFAULT_SETTINGS: SettingsState = {
   schemaVersion: 1,
   graphicsQuality: "auto",
+  renderScale: "auto",
+  frameRate: "auto",
 };
 
 function isGraphicsQuality(value: unknown): value is GraphicsQuality {
   return value === "auto" || value === "high" || value === "reduced";
+}
+
+function isRenderScale(value: unknown): value is RenderScale {
+  return (
+    value === "auto" ||
+    value === "full" ||
+    value === "balanced" ||
+    value === "performance"
+  );
+}
+
+function isFrameRate(value: unknown): value is FrameRate {
+  return value === "auto" || value === "60" || value === "30";
 }
 
 export function parseSettings(value: unknown): SettingsState {
@@ -27,6 +47,14 @@ export function parseSettings(value: unknown): SettingsState {
   return {
     schemaVersion: 1,
     graphicsQuality: value.graphicsQuality,
+    renderScale:
+      "renderScale" in value && isRenderScale(value.renderScale)
+        ? value.renderScale
+        : DEFAULT_SETTINGS.renderScale,
+    frameRate:
+      "frameRate" in value && isFrameRate(value.frameRate)
+        ? value.frameRate
+        : DEFAULT_SETTINGS.frameRate,
   };
 }
 

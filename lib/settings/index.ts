@@ -4,4 +4,9 @@ export {
   parseSettings,
   saveSettings,
 } from "./storage";
-export type { GraphicsQuality, SettingsState } from "./types";
+export type {
+  FrameRate,
+  GraphicsQuality,
+  RenderScale,
+  SettingsState,
+} from "./types";
