@@ -25,10 +25,10 @@ interface EquationEditorProps {
   starterExpression: string;
   error: EditorError | null;
   pending: boolean;
-  hints: readonly [string, string];
+  hints?: readonly string[];
   onChange: (value: string) => void;
   onRun: () => void;
-  onHintOpened: () => void;
+  onHintOpened?: () => void;
 }
 
 export function EquationEditor({
@@ -36,10 +36,10 @@ export function EquationEditor({
   starterExpression,
   error,
   pending,
-  hints,
+  hints = [],
   onChange,
   onRun,
-  onHintOpened,
+  onHintOpened = () => undefined,
 }: EquationEditorProps) {
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -89,22 +89,24 @@ export function EquationEditor({
         </div>
       </div>
 
-      <Accordion>
-        {hints.map((hint, index) => (
-          <AccordionItem
-            key={hint}
-            value={`hint-${index + 1}`}
-            onOpenChange={(open) => {
-              if (open) onHintOpened();
-            }}
-          >
-            <AccordionTrigger>Hint {index + 1}</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">
-              {hint}
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      {hints.length > 0 ? (
+        <Accordion>
+          {hints.map((hint, index) => (
+            <AccordionItem
+              key={hint}
+              value={`hint-${index + 1}`}
+              onOpenChange={(open) => {
+                if (open) onHintOpened();
+              }}
+            >
+              <AccordionTrigger>Hint {index + 1}</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                {hint}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      ) : null}
 
       <div className="rounded-lg border p-3 text-xs leading-5 text-muted-foreground">
         <div className="mb-1 font-medium text-foreground">Quick reference</div>
