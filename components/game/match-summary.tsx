@@ -1,4 +1,4 @@
-import { Check, CircleDashed, CircleMinus, CirclePlus, Paintbrush } from "lucide-react";
+import { CircleDashed, CircleMinus, CirclePlus, Paintbrush } from "lucide-react";
 
 import { MatchResult } from "@/lib/grid";
 
@@ -8,7 +8,6 @@ interface MatchSummaryProps {
 }
 
 const items = [
-  { key: "correct", label: "Correct", icon: Check, color: "text-emerald-700" },
   { key: "missing", label: "Missing", icon: CircleMinus, color: "text-blue-700" },
   { key: "extra", label: "Extra", icon: CirclePlus, color: "text-red-700" },
   {
