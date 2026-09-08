@@ -14,7 +14,7 @@ export function FrameLimiter({ fps }: { fps: 30 | 60 }) {
     function tick(time: number) {
       if (lastFrame === 0 || time - lastFrame >= interval - 0.5) {
         lastFrame = time;
-        advance(time);
+        advance(time / 1000);
       }
       frame = window.requestAnimationFrame(tick);
     }
