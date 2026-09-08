@@ -20,6 +20,8 @@ import {
 import { VoxelInstances } from "./voxel-instances";
 import { WorldLighting } from "./world-lighting";
 
+const CAMERA_SYNC_INTERVAL_MS = 1000 / 30;
+
 interface VoxelWorldProps {
   controlsRef: React.RefObject<CameraControls | null>;
   grid: GridSpec;
@@ -48,7 +50,8 @@ export function VoxelWorld({
   onHover,
 }: VoxelWorldProps) {
   const reduceMotion = useReducedMotion();
-  const cameraFrame = useRef<number | null>(null);
+  const cameraTimer = useRef<number | null>(null);
+  const lastCameraSync = useRef(0);
   const cameraPosition = useRef(new Vector3());
   const cameraTarget = useRef(new Vector3());
   const geometry = useMemo(
@@ -72,27 +75,51 @@ export function VoxelWorld({
   }, [cameraPose, controlsRef]);
   useEffect(
     () => () => {
-      if (cameraFrame.current !== null) {
-        window.cancelAnimationFrame(cameraFrame.current);
+      if (cameraTimer.current !== null) {
+        window.clearTimeout(cameraTimer.current);
       }
     },
     []
   );
 
-  const handleCameraChange = useCallback(() => {
-    if (!onCameraChange || cameraFrame.current !== null) return;
-    cameraFrame.current = window.requestAnimationFrame(() => {
-      cameraFrame.current = null;
-      const controls = controlsRef.current;
-      if (!controls) return;
-      controls.getPosition(cameraPosition.current);
-      controls.getTarget(cameraTarget.current);
-      onCameraChange({
-        position: cameraPosition.current.toArray(),
-        target: cameraTarget.current.toArray(),
-      });
+  const emitCameraPose = useCallback(() => {
+    const controls = controlsRef.current;
+    if (!controls || !onCameraChange) return;
+    controls.getPosition(cameraPosition.current);
+    controls.getTarget(cameraTarget.current);
+    onCameraChange({
+      position: cameraPosition.current.toArray(),
+      target: cameraTarget.current.toArray(),
     });
   }, [controlsRef, onCameraChange]);
+
+  const handleCameraChange = useCallback(() => {
+    if (!onCameraChange || cameraTimer.current !== null) return;
+
+    const now = window.performance.now();
+    const remaining = CAMERA_SYNC_INTERVAL_MS - (now - lastCameraSync.current);
+    if (remaining <= 0) {
+      lastCameraSync.current = now;
+      emitCameraPose();
+      return;
+    }
+
+    cameraTimer.current = window.setTimeout(() => {
+      cameraTimer.current = null;
+      lastCameraSync.current = window.performance.now();
+      emitCameraPose();
+    }, remaining);
+  }, [emitCameraPose, onCameraChange]);
+
+  const handleCameraRest = useCallback(() => {
+    if (!onCameraChange) return;
+    if (cameraTimer.current !== null) {
+      window.clearTimeout(cameraTimer.current);
+      cameraTimer.current = null;
+    }
+    lastCameraSync.current = window.performance.now();
+    emitCameraPose();
+  }, [emitCameraPose, onCameraChange]);
 
   return (
     <>
@@ -107,6 +134,7 @@ export function VoxelWorld({
         onControl={onRenderStart}
         onTransitionStart={onRenderStart}
         onWake={onRenderStart}
+        onRest={handleCameraRest}
         onSleep={onRenderStop}
         smoothTime={reduceMotion ? 0 : 0.18}
         minDistance={9}
