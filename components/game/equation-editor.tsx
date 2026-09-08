@@ -3,16 +3,11 @@
 import { KeyboardEvent } from "react";
 import { Play, RotateCcw, TriangleAlert } from "lucide-react";
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export interface EditorError {
   message: string;
@@ -25,10 +20,10 @@ interface EquationEditorProps {
   starterExpression: string;
   error: EditorError | null;
   pending: boolean;
-  hints?: readonly string[];
+  variant?: "default" | "dock";
+  showReference?: boolean;
   onChange: (value: string) => void;
   onRun: () => void;
-  onHintOpened?: () => void;
 }
 
 export function EquationEditor({
@@ -36,11 +31,13 @@ export function EquationEditor({
   starterExpression,
   error,
   pending,
-  hints = [],
+  variant = "default",
+  showReference = true,
   onChange,
   onRun,
-  onHintOpened = () => undefined,
 }: EquationEditorProps) {
+  const docked = variant === "dock";
+
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
@@ -49,7 +46,7 @@ export function EquationEditor({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={cn("flex flex-col", docked ? "gap-2" : "gap-4")}>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="equation">Equation</Label>
@@ -60,7 +57,10 @@ export function EquationEditor({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
-          className="min-h-32 resize-y font-mono text-[13px] leading-5"
+          className={cn(
+            "font-mono text-[13px] leading-5",
+            docked ? "min-h-16 resize-none" : "min-h-32 resize-y"
+          )}
           spellCheck={false}
           aria-invalid={Boolean(error)}
         />
@@ -89,34 +89,21 @@ export function EquationEditor({
         </div>
       </div>
 
-      {hints.length > 0 ? (
-        <Accordion>
-          {hints.map((hint, index) => (
-            <AccordionItem
-              key={hint}
-              value={`hint-${index + 1}`}
-              onOpenChange={(open) => {
-                if (open) onHintOpened();
-              }}
-            >
-              <AccordionTrigger>Hint {index + 1}</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                {hint}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      ) : null}
+      {showReference ? <EquationReference /> : null}
+    </div>
+  );
+}
 
-      <div className="rounded-lg border p-3 text-xs leading-5 text-muted-foreground">
-        <div className="mb-1 font-medium text-foreground">Quick reference</div>
-        <code>+ - * / %</code> · <code>&lt; &lt;= &gt; &gt;= == !=</code>
-        <br />
-        <code>&amp;&amp; || !</code> · <code>abs min max sqrt floor</code>
-        <br />
-        Return <code>true</code> for the default material, <code>0</code> for
-        empty, or <code>1–8</code> for a color.
-      </div>
+export function EquationReference() {
+  return (
+    <div className="rounded-lg border p-3 text-xs leading-5 text-muted-foreground">
+      <div className="mb-1 font-medium text-foreground">Quick reference</div>
+      <code>+ - * / %</code> · <code>&lt; &lt;= &gt; &gt;= == !=</code>
+      <br />
+      <code>&amp;&amp; || !</code> · <code>abs min max sqrt floor</code>
+      <br />
+      Return <code>true</code> for the default material, <code>0</code> for
+      empty, or <code>1–8</code> for a color.
     </div>
   );
 }

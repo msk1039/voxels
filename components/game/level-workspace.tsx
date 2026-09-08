@@ -9,6 +9,7 @@ import {
   EditorError,
   EquationEditor,
 } from "@/components/game/equation-editor";
+import { LevelHintsDialog } from "@/components/game/level-hints-dialog";
 import { MatchSummary } from "@/components/game/match-summary";
 import { useProgress } from "@/components/progress/progress-provider";
 import {
@@ -154,6 +155,12 @@ function ControlPanel({
             <ProgressValue />
           </Progress>
           <MatchSummary match={match} hasRun={hasRun} />
+          <div className="flex justify-end">
+            <LevelHintsDialog
+              hints={level.hints}
+              onOpen={onHintOpened}
+            />
+          </div>
         </CardContent>
       </Card>
       <EquationEditor
@@ -161,10 +168,8 @@ function ControlPanel({
         starterExpression={level.starterExpression}
         error={error}
         pending={pending}
-        hints={level.hints}
         onChange={onSourceChange}
         onRun={onRun}
-        onHintOpened={onHintOpened}
       />
     </div>
   );
