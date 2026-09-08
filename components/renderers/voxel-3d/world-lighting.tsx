@@ -1,6 +1,6 @@
 "use client";
 
-import { ContactShadows, Environment, Grid, Lightformer } from "@react-three/drei";
+import { Environment, Lightformer } from "@react-three/drei";
 
 import { RenderQuality } from "./types";
 
@@ -54,34 +54,6 @@ export function WorldLighting({ quality }: { quality: RenderQuality }) {
           />
         </Environment>
       ) : null}
-
-      <mesh position={[0, -5.55, 0]} receiveShadow>
-        <boxGeometry args={[25, 0.12, 25]} />
-        <meshStandardMaterial color="#dce3e7" roughness={0.94} />
-      </mesh>
-      <Grid
-        position={[0, -5.485, 0]}
-        args={[24, 24]}
-        cellSize={1}
-        cellThickness={0.55}
-        cellColor="#aebbc3"
-        sectionSize={5}
-        sectionThickness={0.9}
-        sectionColor="#8f9ea8"
-        fadeDistance={18}
-        fadeStrength={1}
-        infiniteGrid={false}
-      />
-      <ContactShadows
-        position={[0, -5.46, 0]}
-        scale={22}
-        far={18}
-        opacity={high ? 0.42 : 0.25}
-        blur={high ? 2.2 : 1.6}
-        resolution={high ? 1024 : 256}
-        frames={high ? 40 : 1}
-        color="#44515a"
-      />
     </>
   );
 }

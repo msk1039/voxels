@@ -124,7 +124,6 @@ export function VoxelWorld({
   return (
     <>
       <color attach="background" args={["#e8edf0"]} />
-      <fog attach="fog" args={["#e8edf0", 24, 42]} />
       <CameraControls
         ref={controlsRef}
         makeDefault
