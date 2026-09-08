@@ -2,12 +2,13 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { CircleHelp, Code2, Lock } from "lucide-react";
+import { Code2, Lock } from "lucide-react";
 
 import { CompletionDialog } from "@/components/game/completion-dialog";
 import {
   EditorError,
   EquationEditor,
+  EquationReference,
 } from "@/components/game/equation-editor";
 import { LevelHintsDialog } from "@/components/game/level-hints-dialog";
 import { MatchSummary } from "@/components/game/match-summary";
@@ -36,11 +37,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LevelDefinition,
@@ -71,6 +67,8 @@ interface WorkspaceContentProps {
   hasRun: boolean;
   transition: VoxelTransition | null;
   onTransitionComplete: (id: number) => void;
+  preview?: boolean;
+  showInteractionHint?: boolean;
 }
 
 function WorkspaceContent({
@@ -80,6 +78,8 @@ function WorkspaceContent({
   hasRun,
   transition,
   onTransitionComplete,
+  preview = false,
+  showInteractionHint = true,
 }: WorkspaceContentProps) {
   if (level.mode === "2d") {
     return (
@@ -89,6 +89,7 @@ function WorkspaceContent({
         actual={actual}
         view={view}
         hasRun={hasRun}
+        preview={preview}
       />
     );
   }
@@ -102,6 +103,8 @@ function WorkspaceContent({
       camera={level.camera}
       transition={transition ?? undefined}
       onTransitionComplete={onTransitionComplete}
+      preview={preview}
+      showInteractionHint={showInteractionHint}
     />
   );
 }
@@ -114,64 +117,44 @@ interface PendingRun {
   exact: boolean;
 }
 
-interface ControlPanelProps {
+interface LevelInfoPanelProps {
   level: LevelDefinition;
-  source: string;
-  error: EditorError | null;
-  pending: boolean;
   match: ReturnType<typeof matchCells>;
   hasRun: boolean;
-  onSourceChange: (value: string) => void;
-  onRun: () => void;
   onHintOpened: () => void;
+  showReference?: boolean;
 }
 
-function ControlPanel({
+function LevelInfoPanel({
   level,
-  source,
-  error,
-  pending,
   match,
   hasRun,
-  onSourceChange,
-  onRun,
   onHintOpened,
-}: ControlPanelProps) {
+  showReference = false,
+}: LevelInfoPanelProps) {
   const coverage = hasRun ? Math.round(match.targetCoverage * 100) : 0;
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
-      <Card size="sm">
-        <CardHeader>
-          <div className="mb-1 flex items-center gap-2">
-            <Badge variant="outline">Level {level.order}</Badge>
-            <span className="text-xs text-muted-foreground">{level.concept}</span>
-          </div>
-          <CardTitle>{level.title}</CardTitle>
-          <CardDescription>{level.objective}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Progress value={coverage}>
-            <ProgressLabel>Target covered</ProgressLabel>
-            <ProgressValue />
-          </Progress>
-          <MatchSummary match={match} hasRun={hasRun} />
-          <div className="flex justify-end">
-            <LevelHintsDialog
-              hints={level.hints}
-              onOpen={onHintOpened}
-            />
-          </div>
-        </CardContent>
-      </Card>
-      <EquationEditor
-        value={source}
-        starterExpression={level.starterExpression}
-        error={error}
-        pending={pending}
-        onChange={onSourceChange}
-        onRun={onRun}
-      />
-    </div>
+    <Card size="sm">
+      <CardHeader>
+        <div className="mb-1 flex items-center gap-2">
+          <Badge variant="outline">Level {level.order}</Badge>
+          <span className="text-xs text-muted-foreground">{level.concept}</span>
+        </div>
+        <CardTitle>{level.title}</CardTitle>
+        <CardDescription>{level.objective}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Progress value={coverage}>
+          <ProgressLabel>Target covered</ProgressLabel>
+          <ProgressValue />
+        </Progress>
+        <MatchSummary match={match} hasRun={hasRun} />
+        {showReference ? <EquationReference /> : null}
+        <div className="flex justify-end">
+          <LevelHintsDialog hints={level.hints} onOpen={onHintOpened} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -243,6 +226,7 @@ function ActiveLevel({
   const [usedHint, setUsedHint] = useState(false);
   const [complexity, setComplexity] = useState(0);
   const [completionOpen, setCompletionOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [transition, setTransition] = useState<VoxelTransition | null>(null);
   const transitionId = useRef(0);
   const pendingRun = useRef<PendingRun | null>(null);
@@ -283,7 +267,7 @@ function ActiveLevel({
     [finishRun]
   );
 
-  async function runEquation() {
+  async function runEquation(closeEditorOnSuccess = false) {
     if (pending) return;
     setPending(true);
     try {
@@ -295,6 +279,7 @@ function ActiveLevel({
       setHasRun(true);
       setError(null);
       setView("compare");
+      if (closeEditorOnSuccess) setEditorOpen(false);
       const hasVoxelChanges =
         difference.enteringKeys.size > 0 || difference.leaving.length > 0;
       const result: PendingRun = {
@@ -330,42 +315,41 @@ function ActiveLevel({
     }
   }
 
-  const controls = (
-    <ControlPanel
+  const levelInfo = (showReference = false) => (
+    <LevelInfoPanel
       level={level}
-      source={source}
-      error={error}
-      pending={pending}
       match={match}
       hasRun={hasRun}
-      onSourceChange={setSource}
-      onRun={runEquation}
       onHintOpened={() => setUsedHint(true)}
+      showReference={showReference}
     />
   );
-  const renderer = (
+
+  const renderer = (showTabs: boolean, rendererView: GridView) => (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-12 shrink-0 items-center border-b px-3">
-        <Tabs value={view} onValueChange={(value) => setView(value as GridView)}>
-          <TabsList>
-            <TabsTrigger value="compare">Compare</TabsTrigger>
-            <TabsTrigger value="target">Target</TabsTrigger>
-            <TabsTrigger value="result">Result</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="ml-auto hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
-          <CircleHelp className="size-3.5" aria-hidden="true" />
-          {level.mode === "2d" ? "Hover a cell for its coordinate" : "Drag to rotate"}
+      {showTabs ? (
+        <div className="flex h-12 shrink-0 items-center border-b px-3">
+          <Tabs
+            value={view}
+            onValueChange={(value) => setView(value as GridView)}
+          >
+            <TabsList>
+              <TabsTrigger value="compare">Compare</TabsTrigger>
+              <TabsTrigger value="target">Target</TabsTrigger>
+              <TabsTrigger value="result">Result</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-      </div>
+      ) : null}
       <div className="min-h-0 flex-1">
         <WorkspaceContent
           level={level}
           actual={actual}
-          view={view}
+          view={rendererView}
           hasRun={hasRun}
           transition={transition}
           onTransitionComplete={handleTransitionComplete}
+          showInteractionHint={false}
         />
       </div>
     </div>
@@ -374,38 +358,99 @@ function ActiveLevel({
   return (
     <>
       {desktop ? (
-        <div className="h-[calc(100svh-5.5rem)] overflow-hidden rounded-xl border bg-background">
-        <ResizablePanelGroup orientation="horizontal">
-          <ResizablePanel defaultSize="65%" minSize="45%">
-            {renderer}
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize="35%" minSize="300px" maxSize="480px">
-            {controls}
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        <div className="grid h-[calc(100svh-5.5rem)] grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] overflow-hidden rounded-xl border bg-background">
+          <section
+            className="relative min-w-0 overflow-hidden border-r"
+            aria-label="Your render"
+          >
+            {renderer(false, "compare")}
+            <div className="pointer-events-none absolute inset-x-4 bottom-4 z-10 flex justify-center">
+              <div className="pointer-events-auto w-full max-w-2xl rounded-xl border bg-background p-3 shadow-md">
+                <EquationEditor
+                  value={source}
+                  starterExpression={level.starterExpression}
+                  error={error}
+                  pending={pending}
+                  variant="dock"
+                  showReference={false}
+                  onChange={setSource}
+                  onRun={() => void runEquation()}
+                />
+              </div>
+            </div>
+          </section>
+
+          <div className="grid min-h-0 grid-rows-2">
+            <section
+              className="flex min-h-0 flex-col border-b"
+              aria-label="Expected render"
+            >
+              <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
+                Expected render
+              </div>
+              <div className="min-h-0 flex-1">
+                <WorkspaceContent
+                  level={level}
+                  actual={actual}
+                  view="target"
+                  hasRun={hasRun}
+                  transition={null}
+                  onTransitionComplete={handleTransitionComplete}
+                  preview
+                />
+              </div>
+            </section>
+            <section
+              className="min-h-0 overflow-y-auto p-3"
+              aria-label="Level information"
+            >
+              {levelInfo(true)}
+            </section>
+          </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border bg-background">
-          <div className="min-h-[500px]">{renderer}</div>
-          <div className="border-t p-3">
-            <Drawer>
-              <DrawerTrigger render={<Button className="w-full" />}>
-                <Code2 data-icon="inline-start" aria-hidden="true" />
-                Edit equation
-              </DrawerTrigger>
-              <DrawerContent className="max-h-[92svh]">
-                <DrawerHeader>
-                  <DrawerTitle>{level.title} equation</DrawerTitle>
-                  <DrawerDescription>
-                    Run an expression, compare it with the target, and open
-                    hints when needed.
-                  </DrawerDescription>
-                </DrawerHeader>
-                <div className="overflow-y-auto px-1 pb-6">{controls}</div>
-              </DrawerContent>
-            </Drawer>
-          </div>
+        <div className="space-y-3">
+          <section aria-label="Level information">{levelInfo()}</section>
+          <section
+            className="relative h-[540px] overflow-hidden rounded-xl border bg-background"
+            aria-label="Render workspace"
+          >
+            {renderer(true, view)}
+            <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex justify-center">
+              <Drawer
+                open={editorOpen}
+                onOpenChange={setEditorOpen}
+                showSwipeHandle
+              >
+                <DrawerTrigger
+                  render={
+                    <Button className="pointer-events-auto shadow-md" />
+                  }
+                >
+                  <Code2 data-icon="inline-start" aria-hidden="true" />
+                  Edit equation
+                </DrawerTrigger>
+                <DrawerContent className="max-h-[92svh]">
+                  <DrawerHeader>
+                    <DrawerTitle>{level.title} equation</DrawerTitle>
+                    <DrawerDescription>
+                      Edit the expression and run it against the target.
+                    </DrawerDescription>
+                  </DrawerHeader>
+                  <div className="overflow-y-auto p-4 pb-6">
+                    <EquationEditor
+                      value={source}
+                      starterExpression={level.starterExpression}
+                      error={error}
+                      pending={pending}
+                      onChange={setSource}
+                      onRun={() => void runEquation(true)}
+                    />
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            </div>
+          </section>
         </div>
       )}
       <CompletionDialog
