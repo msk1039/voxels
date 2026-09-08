@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CircleHelp, Lock } from "lucide-react";
+import { CircleHelp, Code2, Lock } from "lucide-react";
 
 import { CompletionDialog } from "@/components/game/completion-dialog";
 import {
@@ -17,7 +17,7 @@ import {
 } from "@/components/renderers/grid-2d/grid-2d-renderer";
 import { VoxelCanvas } from "@/components/renderers/voxel-3d/voxel-canvas";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -26,6 +26,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -39,6 +47,7 @@ import {
   getNextLevel,
 } from "@/content/levels";
 import { useGridWorker } from "@/hooks/use-grid-worker";
+import { useIsDesktop } from "@/hooks/use-desktop";
 import { EquationError, EquationMode, getErrorLocation } from "@/lib/equation";
 import { CellMap, matchCells } from "@/lib/grid";
 import {
@@ -215,6 +224,7 @@ function ActiveLevel({
   const [complexity, setComplexity] = useState(0);
   const [completionOpen, setCompletionOpen] = useState(false);
   const runGrid = useGridWorker();
+  const desktop = useIsDesktop();
 
   const match = useMemo(
     () => matchCells(level.target, actual),
@@ -300,7 +310,8 @@ function ActiveLevel({
 
   return (
     <>
-      <div className="hidden h-[calc(100svh-5.5rem)] overflow-hidden rounded-xl border bg-background lg:block">
+      {desktop ? (
+        <div className="h-[calc(100svh-5.5rem)] overflow-hidden rounded-xl border bg-background">
         <ResizablePanelGroup orientation="horizontal">
           <ResizablePanel defaultSize="65%" minSize="45%">
             {renderer}
@@ -310,11 +321,30 @@ function ActiveLevel({
             {controls}
           </ResizablePanel>
         </ResizablePanelGroup>
-      </div>
-      <div className="overflow-hidden rounded-xl border bg-background lg:hidden">
-        <div className="min-h-[480px]">{renderer}</div>
-        <div className="border-t">{controls}</div>
-      </div>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border bg-background">
+          <div className="min-h-[500px]">{renderer}</div>
+          <div className="border-t p-3">
+            <Drawer>
+              <DrawerTrigger render={<Button className="w-full" />}>
+                <Code2 data-icon="inline-start" aria-hidden="true" />
+                Edit equation
+              </DrawerTrigger>
+              <DrawerContent className="max-h-[92svh]">
+                <DrawerHeader>
+                  <DrawerTitle>{level.title} equation</DrawerTitle>
+                  <DrawerDescription>
+                    Run an expression, compare it with the target, and open
+                    hints when needed.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="overflow-y-auto px-1 pb-6">{controls}</div>
+              </DrawerContent>
+            </Drawer>
+          </div>
+        </div>
+      )}
       <CompletionDialog
         level={level}
         open={completionOpen}
