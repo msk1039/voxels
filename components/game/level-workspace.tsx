@@ -38,8 +38,9 @@ import {
   getLevelsForMode,
   getNextLevel,
 } from "@/content/levels";
+import { useGridWorker } from "@/hooks/use-grid-worker";
 import { EquationError, EquationMode, getErrorLocation } from "@/lib/equation";
-import { CellMap, evaluateGrid, matchCells } from "@/lib/grid";
+import { CellMap, matchCells } from "@/lib/grid";
 import {
   LevelCompletion,
   isLevelUnlocked,
@@ -213,6 +214,7 @@ function ActiveLevel({
   const [usedHint, setUsedHint] = useState(false);
   const [complexity, setComplexity] = useState(0);
   const [completionOpen, setCompletionOpen] = useState(false);
+  const runGrid = useGridWorker();
 
   const match = useMemo(
     () => matchCells(level.target, actual),
@@ -220,10 +222,11 @@ function ActiveLevel({
   );
   const next = getNextLevel(level);
 
-  function runEquation() {
+  async function runEquation() {
+    if (pending) return;
     setPending(true);
     try {
-      const evaluation = evaluateGrid(source, level.mode, level.grid);
+      const evaluation = await runGrid(source, level.mode, level.grid);
       const nextMatch = matchCells(level.target, evaluation.cells);
       setActual(evaluation.cells);
       setComplexity(evaluation.complexity);
