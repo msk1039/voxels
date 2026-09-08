@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 import { GridView } from "../grid-2d/grid-2d-renderer";
 import { FrameLimiter } from "./frame-limiter";
+import { calculateRenderDpr } from "./render-resolution";
 import {
   CameraPose,
   HoveredVoxel,
@@ -97,22 +98,13 @@ export function VoxelCanvas({
   else if (settings.graphicsQuality === "reduced") quality = "reduced";
   else quality = mobile || performanceReduced ? "reduced" : "high";
 
-  const selectedScale =
-    settings.renderScale === "full"
-      ? 1
-      : settings.renderScale === "balanced"
-        ? 0.8
-        : settings.renderScale === "performance"
-          ? 0.65
-          : performanceReduced
-            ? 0.8
-            : 1;
-  const dprLimit = quality === "high" ? 1.5 : 1;
-  const configuredDpr = Math.max(
-    0.6,
-    Math.min(devicePixelRatio, dprLimit) * selectedScale
-  );
-  const renderDpr = preview ? Math.min(configuredDpr, 1) : configuredDpr;
+  const renderDpr = calculateRenderDpr({
+    devicePixelRatio,
+    mobile,
+    preview,
+    renderScale: settings.renderScale,
+    performanceReduced,
+  });
   const explicitFrameRate =
     settings.frameRate === "auto"
       ? null
