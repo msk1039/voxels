@@ -4,12 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CameraControls, PerformanceMonitor } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { EffectComposer, N8AO, ToneMapping } from "@react-three/postprocessing";
-import { Box, RotateCcw, Scan, Square, View } from "lucide-react";
+import { RotateCcw, Scan, Square, View } from "lucide-react";
 import { ToneMappingMode } from "postprocessing";
 import { ACESFilmicToneMapping, NoToneMapping, SRGBColorSpace } from "three";
 
 import { useSettings } from "@/components/settings/settings-provider";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDevicePixelRatio } from "@/hooks/use-device-pixel-ratio";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,7 +18,12 @@ import { cn } from "@/lib/utils";
 
 import { GridView } from "../grid-2d/grid-2d-renderer";
 import { FrameLimiter } from "./frame-limiter";
-import { HoveredVoxel, RenderQuality, VoxelTransition } from "./types";
+import {
+  CameraPose,
+  HoveredVoxel,
+  RenderQuality,
+  VoxelTransition,
+} from "./types";
 import { createVoxelGroups } from "./voxel-groups";
 import { VOXEL_TRANSITION_MS } from "./voxel-transition";
 import { VoxelWorld } from "./voxel-world";
@@ -34,6 +38,8 @@ interface VoxelCanvasProps {
   onTransitionComplete?: (id: number) => void;
   preview?: boolean;
   showInteractionHint?: boolean;
+  cameraPose?: CameraPose;
+  onCameraChange?: (pose: CameraPose) => void;
   camera?: {
     position: [number, number, number];
     target: [number, number, number];
@@ -55,6 +61,8 @@ export function VoxelCanvas({
   onTransitionComplete,
   preview = false,
   showInteractionHint = true,
+  cameraPose,
+  onCameraChange,
   camera = DEFAULT_CAMERA,
 }: VoxelCanvasProps) {
   const controls = useRef<CameraControls>(null);
@@ -182,6 +190,8 @@ export function VoxelCanvas({
           groups={groups}
           quality={quality}
           interactive={!preview}
+          cameraPose={cameraPose}
+          onCameraChange={onCameraChange}
           transition={transition}
           onHover={setHovered}
         />
@@ -200,12 +210,8 @@ export function VoxelCanvas({
         ) : null}
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
-        <Badge variant="secondary" className="bg-background/90 shadow-sm">
-          <Box aria-hidden="true" />
-          {view === "target" ? target.size : actual.size} voxels
-        </Badge>
-        {!preview ? (
+      {!preview ? (
+        <div className="pointer-events-none absolute top-0 right-0 p-3">
           <div className="pointer-events-auto flex items-center gap-1 rounded-lg border bg-background/90 p-1 shadow-sm">
             <Button
               variant="ghost"
@@ -244,8 +250,8 @@ export function VoxelCanvas({
               <Scan aria-hidden="true" />
             </Button>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {!preview && showInteractionHint ? (
         <div className="pointer-events-none absolute bottom-3 left-3 rounded-md border bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground shadow-sm">

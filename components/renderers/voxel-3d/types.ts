@@ -15,6 +15,11 @@ export interface HoveredVoxel {
   label: string;
 }
 
+export interface CameraPose {
+  position: [number, number, number];
+  target: [number, number, number];
+}
+
 export interface VoxelTransition extends CellTransitionDiff {
   id: number;
 }

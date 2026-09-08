@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { CameraControls } from "@react-three/drei";
+import { Vector3 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 import { createClayTexture } from "./clay-texture";
 import {
+  CameraPose,
   HoveredVoxel,
   RenderQuality,
   VoxelGroup,
@@ -21,6 +23,8 @@ interface VoxelWorldProps {
   groups: VoxelGroup[];
   quality: RenderQuality;
   interactive?: boolean;
+  cameraPose?: CameraPose;
+  onCameraChange?: (pose: CameraPose) => void;
   transition?: VoxelTransition;
   onHover: (hovered: HoveredVoxel | null) => void;
 }
@@ -30,10 +34,15 @@ export function VoxelWorld({
   groups,
   quality,
   interactive = true,
+  cameraPose,
+  onCameraChange,
   transition,
   onHover,
 }: VoxelWorldProps) {
   const reduceMotion = useReducedMotion();
+  const cameraFrame = useRef<number | null>(null);
+  const cameraPosition = useRef(new Vector3());
+  const cameraTarget = useRef(new Vector3());
   const geometry = useMemo(
     () => new RoundedBoxGeometry(0.86, 0.86, 0.86, quality === "high" ? 4 : 2, 0.085),
     [quality]
@@ -45,6 +54,37 @@ export function VoxelWorld({
 
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => detailTexture?.dispose(), [detailTexture]);
+  useEffect(() => {
+    if (!cameraPose) return;
+    void controlsRef.current?.setLookAt(
+      ...cameraPose.position,
+      ...cameraPose.target,
+      false
+    );
+  }, [cameraPose, controlsRef]);
+  useEffect(
+    () => () => {
+      if (cameraFrame.current !== null) {
+        window.cancelAnimationFrame(cameraFrame.current);
+      }
+    },
+    []
+  );
+
+  const handleCameraChange = useCallback(() => {
+    if (!onCameraChange || cameraFrame.current !== null) return;
+    cameraFrame.current = window.requestAnimationFrame(() => {
+      cameraFrame.current = null;
+      const controls = controlsRef.current;
+      if (!controls) return;
+      controls.getPosition(cameraPosition.current);
+      controls.getTarget(cameraTarget.current);
+      onCameraChange({
+        position: cameraPosition.current.toArray(),
+        target: cameraTarget.current.toArray(),
+      });
+    });
+  }, [controlsRef, onCameraChange]);
 
   return (
     <>
@@ -54,6 +94,7 @@ export function VoxelWorld({
         ref={controlsRef}
         makeDefault
         enabled={interactive}
+        onChange={onCameraChange ? handleCameraChange : undefined}
         smoothTime={reduceMotion ? 0 : 0.18}
         minDistance={9}
         maxDistance={34}

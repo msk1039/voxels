@@ -18,7 +18,10 @@ import {
   GridView,
 } from "@/components/renderers/grid-2d/grid-2d-renderer";
 import { VoxelCanvas } from "@/components/renderers/voxel-3d/voxel-canvas";
-import { VoxelTransition } from "@/components/renderers/voxel-3d/types";
+import {
+  CameraPose,
+  VoxelTransition,
+} from "@/components/renderers/voxel-3d/types";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -69,6 +72,8 @@ interface WorkspaceContentProps {
   onTransitionComplete: (id: number) => void;
   preview?: boolean;
   showInteractionHint?: boolean;
+  cameraPose?: CameraPose;
+  onCameraChange?: (pose: CameraPose) => void;
 }
 
 function WorkspaceContent({
@@ -80,6 +85,8 @@ function WorkspaceContent({
   onTransitionComplete,
   preview = false,
   showInteractionHint = true,
+  cameraPose,
+  onCameraChange,
 }: WorkspaceContentProps) {
   if (level.mode === "2d") {
     return (
@@ -105,6 +112,8 @@ function WorkspaceContent({
       onTransitionComplete={onTransitionComplete}
       preview={preview}
       showInteractionHint={showInteractionHint}
+      cameraPose={cameraPose}
+      onCameraChange={onCameraChange}
     />
   );
 }
@@ -227,6 +236,7 @@ function ActiveLevel({
   const [complexity, setComplexity] = useState(0);
   const [completionOpen, setCompletionOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [cameraPose, setCameraPose] = useState<CameraPose | null>(null);
   const [transition, setTransition] = useState<VoxelTransition | null>(null);
   const transitionId = useRef(0);
   const pendingRun = useRef<PendingRun | null>(null);
@@ -325,7 +335,11 @@ function ActiveLevel({
     />
   );
 
-  const renderer = (showTabs: boolean, rendererView: GridView) => (
+  const renderer = (
+    showTabs: boolean,
+    rendererView: GridView,
+    onCameraChange?: (pose: CameraPose) => void
+  ) => (
     <div className="flex h-full min-h-0 flex-col">
       {showTabs ? (
         <div className="flex h-12 shrink-0 items-center border-b px-3">
@@ -350,6 +364,7 @@ function ActiveLevel({
           transition={transition}
           onTransitionComplete={handleTransitionComplete}
           showInteractionHint={false}
+          onCameraChange={onCameraChange}
         />
       </div>
     </div>
@@ -363,7 +378,7 @@ function ActiveLevel({
             className="relative min-w-0 overflow-hidden border-r"
             aria-label="Your render"
           >
-            {renderer(false, "compare")}
+            {renderer(false, "compare", setCameraPose)}
             <div className="pointer-events-none absolute inset-x-4 bottom-4 z-10 flex justify-center">
               <div className="pointer-events-auto w-full max-w-2xl rounded-xl border bg-background p-3 shadow-md">
                 <EquationEditor
@@ -397,6 +412,7 @@ function ActiveLevel({
                   transition={null}
                   onTransitionComplete={handleTransitionComplete}
                   preview
+                  cameraPose={cameraPose ?? undefined}
                 />
               </div>
             </section>
