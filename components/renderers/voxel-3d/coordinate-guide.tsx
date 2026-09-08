@@ -1,6 +1,8 @@
 "use client";
 
-import { Edges, Html, Line } from "@react-three/drei";
+import { useEffect, useMemo } from "react";
+import { Edges, Line } from "@react-three/drei";
+import { CanvasTexture, LinearFilter, SRGBColorSpace } from "three";
 
 import { GridSpec } from "@/lib/grid";
 
@@ -18,39 +20,58 @@ const AXIS_COLORS = {
 interface CoordinateLabelProps {
   color: string;
   position: [number, number, number];
-  children: React.ReactNode;
+  texture?: CanvasTexture;
   prominent?: boolean;
 }
 
 function CoordinateLabel({
   color,
   position,
-  children,
+  texture,
   prominent = false,
 }: CoordinateLabelProps) {
+  if (!texture) return null;
+
   return (
-    <Html
-      center
+    <sprite
       position={position}
-      distanceFactor={16}
-      zIndexRange={[4, 0]}
-      style={{ pointerEvents: "none" }}
+      scale={prominent ? [0.62, 0.31, 1] : [0.48, 0.24, 1]}
+      renderOrder={10}
     >
-      <span
-        className={
-          prominent
-            ? "font-mono text-xs font-bold"
-            : "font-mono text-[9px] font-medium"
-        }
-        style={{
-          color,
-          textShadow: "0 1px 2px rgb(255 255 255 / 0.9)",
-        }}
-      >
-        {children}
-      </span>
-    </Html>
+      <spriteMaterial
+        map={texture}
+        color={color}
+        depthTest={false}
+        depthWrite={false}
+        toneMapped={false}
+        transparent
+      />
+    </sprite>
   );
+}
+
+function createLabelTexture(label: string) {
+  if (typeof document === "undefined") return undefined;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 64;
+  const context = canvas.getContext("2d");
+  if (!context) return undefined;
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#ffffff";
+  context.font = "600 32px ui-monospace, SFMono-Regular, Menlo, monospace";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(label, canvas.width / 2, canvas.height / 2 + 1);
+
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  texture.generateMipmaps = false;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  return texture;
 }
 
 export function CoordinateGuide({
@@ -60,11 +81,29 @@ export function CoordinateGuide({
   grid: GridSpec;
   showScale: boolean;
 }) {
-  const { low, high, center, size, ticks } =
-    createCoordinateGuideLayout(grid);
+  const { low, high, center, size, ticks } = useMemo(
+    () => createCoordinateGuideLayout(grid),
+    [grid]
+  );
+  const labels = useMemo(
+    () => [...new Set([...ticks.map(formatCoordinateTick), "x", "y", "z"])],
+    [ticks]
+  );
+  const labelTextures = useMemo(
+    () =>
+      new Map(labels.map((label) => [label, createLabelTexture(label)])),
+    [labels]
+  );
   const tickLength = Math.max(0.16, grid.step * 0.18);
   const labelOffset = Math.max(0.38, grid.step * 0.42);
   const axisOffset = Math.max(0.62, grid.step * 0.7);
+
+  useEffect(
+    () => () => {
+      for (const texture of labelTextures.values()) texture?.dispose();
+    },
+    [labelTextures]
+  );
 
   return (
     <group>
@@ -113,9 +152,8 @@ export function CoordinateGuide({
               <CoordinateLabel
                 color={AXIS_COLORS.x}
                 position={[value, low - labelOffset, high]}
-              >
-                {formatCoordinateTick(value)}
-              </CoordinateLabel>
+                texture={labelTextures.get(formatCoordinateTick(value))}
+              />
 
               <Line
                 points={[
@@ -128,9 +166,8 @@ export function CoordinateGuide({
               <CoordinateLabel
                 color={AXIS_COLORS.y}
                 position={[low - labelOffset, value, high]}
-              >
-                {formatCoordinateTick(value)}
-              </CoordinateLabel>
+                texture={labelTextures.get(formatCoordinateTick(value))}
+              />
 
               <Line
                 points={[
@@ -143,9 +180,8 @@ export function CoordinateGuide({
               <CoordinateLabel
                 color={AXIS_COLORS.z}
                 position={[low - labelOffset, low, value]}
-              >
-                {formatCoordinateTick(value)}
-              </CoordinateLabel>
+                texture={labelTextures.get(formatCoordinateTick(value))}
+              />
             </group>
           ))
         : null}
@@ -153,24 +189,21 @@ export function CoordinateGuide({
       <CoordinateLabel
         color={AXIS_COLORS.x}
         position={[high + axisOffset, low - labelOffset, high]}
+        texture={labelTextures.get("x")}
         prominent
-      >
-        x
-      </CoordinateLabel>
+      />
       <CoordinateLabel
         color={AXIS_COLORS.y}
         position={[low - labelOffset, high + axisOffset, high]}
+        texture={labelTextures.get("y")}
         prominent
-      >
-        y
-      </CoordinateLabel>
+      />
       <CoordinateLabel
         color={AXIS_COLORS.z}
         position={[low - labelOffset, low, low - axisOffset]}
+        texture={labelTextures.get("z")}
         prominent
-      >
-        z
-      </CoordinateLabel>
+      />
     </group>
   );
 }
