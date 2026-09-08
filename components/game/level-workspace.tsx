@@ -236,6 +236,9 @@ function ActiveLevel({
   const [view, setView] = useState<GridView>("compare");
   const [usedHint, setUsedHint] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [desktopPanel, setDesktopPanel] = useState<"target" | "level">(
+    "target"
+  );
   const [cameraPose, setCameraPose] = useState<CameraPose | null>(null);
   const [transition, setTransition] = useState<VoxelTransition | null>(null);
   const transitionId = useRef(0);
@@ -393,54 +396,65 @@ function ActiveLevel({
       {desktop ? (
         <div className="grid h-[calc(100svh-5.5rem)] grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] overflow-hidden rounded-[22px] border bg-background [corner-shape:squircle]">
           <section
-            className="relative min-w-0 overflow-hidden border-r"
+            className="min-w-0 overflow-hidden border-r"
             aria-label="Your render"
           >
             {renderer(false, "compare", setCameraPose)}
-            <div className="pointer-events-none absolute inset-x-4 bottom-4 z-10 flex justify-center">
-              <div className="pointer-events-auto w-full max-w-2xl rounded-[20px] border bg-background p-3 shadow-md [corner-shape:squircle]">
-                <EquationEditor
-                  value={source}
-                  starterExpression={level.starterExpression}
-                  error={error}
-                  pending={pending}
-                  variant="dock"
-                  showReference={false}
-                  onChange={setSource}
-                  onRun={() => void runEquation()}
-                />
-              </div>
-            </div>
           </section>
 
           <div className="grid min-h-0 grid-rows-2">
             <section
               className="flex min-h-0 flex-col border-b"
-              aria-label="Expected render"
+              aria-label="Target and level information"
             >
-              <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
-                Expected render
+              <div className="flex h-10 shrink-0 items-center border-b px-3">
+                <Tabs
+                  value={desktopPanel}
+                  onValueChange={(value) =>
+                    setDesktopPanel(value as "target" | "level")
+                  }
+                >
+                  <TabsList>
+                    <TabsTrigger value="target">Target</TabsTrigger>
+                    <TabsTrigger value="level">Level info</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
               <div className="min-h-0 flex-1">
-                <WorkspaceContent
-                  level={level}
-                  actual={actual}
-                  view="target"
-                  hasRun={hasRun}
-                  transition={null}
-                  onTransitionComplete={handleTransitionComplete}
-                  preview
-                  cameraPose={cameraPose ?? undefined}
-                />
+                {desktopPanel === "target" ? (
+                  <WorkspaceContent
+                    level={level}
+                    actual={actual}
+                    view="target"
+                    hasRun={hasRun}
+                    transition={null}
+                    onTransitionComplete={handleTransitionComplete}
+                    preview
+                    cameraPose={cameraPose ?? undefined}
+                  />
+                ) : (
+                  <div className="h-full p-3">
+                    {levelInfo(
+                      "h-full rounded-[10px] [corner-shape:squircle]"
+                    )}
+                  </div>
+                )}
               </div>
             </section>
             <section
-              className="min-h-0 overflow-hidden p-3"
-              aria-label="Level information"
+              className="min-h-0 overflow-hidden"
+              aria-label="Equation editor"
             >
-              {levelInfo(
-                "h-full rounded-[10px] [corner-shape:squircle]"
-              )}
+              <EquationEditor
+                value={source}
+                starterExpression={level.starterExpression}
+                error={error}
+                pending={pending}
+                variant="pane"
+                showReference={false}
+                onChange={setSource}
+                onRun={() => void runEquation()}
+              />
             </section>
           </div>
         </div>

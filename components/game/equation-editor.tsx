@@ -20,7 +20,7 @@ interface EquationEditorProps {
   starterExpression: string;
   error: EditorError | null;
   pending: boolean;
-  variant?: "default" | "dock";
+  variant?: "default" | "pane";
   showReference?: boolean;
   onChange: (value: string) => void;
   onRun: () => void;
@@ -36,7 +36,7 @@ export function EquationEditor({
   onChange,
   onRun,
 }: EquationEditorProps) {
-  const docked = variant === "dock";
+  const pane = variant === "pane";
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -46,12 +46,21 @@ export function EquationEditor({
   }
 
   return (
-    <div className={cn("flex flex-col", docked ? "gap-2" : "gap-4")}>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="equation">Equation</Label>
-          <span className="text-[11px] text-muted-foreground">⌘/Ctrl + Enter</span>
-        </div>
+    <div className={cn("flex flex-col", pane ? "h-full min-h-0" : "gap-2")}>
+      <div
+        className={cn(
+          "flex items-center justify-between",
+          pane && "h-10 shrink-0 border-b px-3"
+        )}
+      >
+        <Label htmlFor="equation">Equation</Label>
+        <span className="text-[11px] text-muted-foreground">⌘/Ctrl + Enter</span>
+      </div>
+      <div
+        className={cn(
+          pane ? "flex min-h-0 flex-1 flex-col gap-2 p-3" : "space-y-2"
+        )}
+      >
         <Textarea
           id="equation"
           value={value}
@@ -59,8 +68,8 @@ export function EquationEditor({
           onKeyDown={handleKeyDown}
           className={cn(
             "font-mono text-[13px] leading-5",
-            docked
-              ? "min-h-16 resize-none rounded-[8px] [corner-shape:squircle]"
+            pane
+              ? "min-h-0 flex-1 resize-none rounded-[10px] bg-muted/20 p-3 [corner-shape:squircle]"
               : "min-h-32 resize-y [corner-shape:squircle]"
           )}
           spellCheck={false}
@@ -69,7 +78,7 @@ export function EquationEditor({
         {error ? (
           <Alert
             variant="destructive"
-            className={cn(docked && "rounded-[8px] [corner-shape:squircle]")}
+            className={cn(pane && "rounded-[10px] [corner-shape:squircle]")}
           >
             <TriangleAlert aria-hidden="true" />
             <AlertTitle>Equation error</AlertTitle>
@@ -78,31 +87,47 @@ export function EquationEditor({
             </AlertDescription>
           </Alert>
         ) : null}
-        <div className="flex gap-2">
+        <div className={cn("flex gap-2", pane && "shrink-0 justify-end")}>
           <Button
             className={cn(
-              "flex-1",
-              docked && "rounded-[8px] [corner-shape:squircle]"
+              !pane && "flex-1",
+              pane && "min-w-28 rounded-[10px] [corner-shape:squircle]"
             )}
             onClick={onRun}
             disabled={pending || !value.trim()}
           >
             <Play data-icon="inline-start" aria-hidden="true" />
-            {pending ? "Running…" : "Run equation"}
+            {pending
+              ? pane
+                ? "Simulating…"
+                : "Running…"
+              : pane
+                ? "Simulate"
+                : "Run equation"}
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(docked && "rounded-[8px] [corner-shape:squircle]")}
-            onClick={() => onChange(starterExpression)}
-            aria-label="Restore starter equation"
-          >
-            <RotateCcw aria-hidden="true" />
-          </Button>
+          {pane ? (
+            <Button
+              variant="outline"
+              className="rounded-[10px] [corner-shape:squircle]"
+              onClick={() => onChange(starterExpression)}
+            >
+              <RotateCcw data-icon="inline-start" aria-hidden="true" />
+              Reset
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onChange(starterExpression)}
+              aria-label="Restore starter equation"
+            >
+              <RotateCcw aria-hidden="true" />
+            </Button>
+          )}
         </div>
       </div>
 
-      {showReference ? <EquationReference /> : null}
+      {!pane && showReference ? <EquationReference /> : null}
     </div>
   );
 }
