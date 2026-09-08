@@ -15,6 +15,7 @@ import { useDevicePixelRatio } from "@/hooks/use-device-pixel-ratio";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { CellMap, GridSpec } from "@/lib/grid";
+import { cn } from "@/lib/utils";
 
 import { GridView } from "../grid-2d/grid-2d-renderer";
 import { FrameLimiter } from "./frame-limiter";
@@ -31,6 +32,8 @@ interface VoxelCanvasProps {
   hasRun: boolean;
   transition?: VoxelTransition;
   onTransitionComplete?: (id: number) => void;
+  preview?: boolean;
+  showInteractionHint?: boolean;
   camera?: {
     position: [number, number, number];
     target: [number, number, number];
@@ -50,6 +53,8 @@ export function VoxelCanvas({
   hasRun,
   transition,
   onTransitionComplete,
+  preview = false,
+  showInteractionHint = true,
   camera = DEFAULT_CAMERA,
 }: VoxelCanvasProps) {
   const controls = useRef<CameraControls>(null);
@@ -79,7 +84,8 @@ export function VoxelCanvas({
   }, [baseGroups, transition, view]);
 
   let quality: RenderQuality;
-  if (settings.graphicsQuality === "high") quality = "high";
+  if (preview) quality = "reduced";
+  else if (settings.graphicsQuality === "high") quality = "high";
   else if (settings.graphicsQuality === "reduced") quality = "reduced";
   else quality = mobile || performanceReduced ? "reduced" : "high";
 
@@ -94,10 +100,11 @@ export function VoxelCanvas({
             ? 0.8
             : 1;
   const dprLimit = quality === "high" ? 1.5 : 1;
-  const renderDpr = Math.max(
+  const configuredDpr = Math.max(
     0.6,
     Math.min(devicePixelRatio, dprLimit) * selectedScale
   );
+  const renderDpr = preview ? Math.min(configuredDpr, 1) : configuredDpr;
   const explicitFrameRate =
     settings.frameRate === "auto"
       ? null
@@ -127,11 +134,18 @@ export function VoxelCanvas({
   }
 
   return (
-    <div className="relative h-full min-h-[420px] overflow-hidden bg-muted/20">
+    <div
+      className={cn(
+        "relative h-full overflow-hidden bg-muted/20",
+        preview ? "min-h-0" : "min-h-[420px]"
+      )}
+    >
       <Canvas
         style={{ position: "absolute", inset: 0 }}
         dpr={renderDpr}
-        frameloop={explicitFrameRate ? "never" : "always"}
+        frameloop={
+          preview ? "demand" : explicitFrameRate ? "never" : "always"
+        }
         camera={{
           position: camera.position,
           fov: 34,
@@ -148,8 +162,11 @@ export function VoxelCanvas({
         }}
         aria-label={`${view} three-dimensional voxel grid from ${grid.min} to ${grid.max}`}
       >
-        {explicitFrameRate ? <FrameLimiter fps={explicitFrameRate} /> : null}
-        {(settings.graphicsQuality === "auto" ||
+        {!preview && explicitFrameRate ? (
+          <FrameLimiter fps={explicitFrameRate} />
+        ) : null}
+        {!preview &&
+        (settings.graphicsQuality === "auto" ||
           settings.renderScale === "auto") &&
         !explicitFrameRate &&
         !mobile ? (
@@ -164,10 +181,11 @@ export function VoxelCanvas({
           controlsRef={controls}
           groups={groups}
           quality={quality}
+          interactive={!preview}
           transition={transition}
           onHover={setHovered}
         />
-        {quality === "high" ? (
+        {!preview && quality === "high" ? (
           <EffectComposer multisampling={4}>
             <N8AO
               aoRadius={1.6}
@@ -187,53 +205,57 @@ export function VoxelCanvas({
           <Box aria-hidden="true" />
           {view === "target" ? target.size : actual.size} voxels
         </Badge>
-        <div className="pointer-events-auto flex items-center gap-1 rounded-lg border bg-background/90 p-1 shadow-sm">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="Reset camera"
-            aria-label="Reset camera"
-            onClick={() => moveCamera(camera.position)}
-          >
-            <RotateCcw aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="Front view"
-            aria-label="Front view"
-            onClick={() => moveCamera([0, 0, 20])}
-          >
-            <Square aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="Side view"
-            aria-label="Side view"
-            onClick={() => moveCamera([20, 0, 0])}
-          >
-            <View aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="Top view"
-            aria-label="Top view"
-            onClick={() => moveCamera([0, 20, 0.01])}
-          >
-            <Scan aria-hidden="true" />
-          </Button>
-        </div>
+        {!preview ? (
+          <div className="pointer-events-auto flex items-center gap-1 rounded-lg border bg-background/90 p-1 shadow-sm">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Reset camera"
+              aria-label="Reset camera"
+              onClick={() => moveCamera(camera.position)}
+            >
+              <RotateCcw aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Front view"
+              aria-label="Front view"
+              onClick={() => moveCamera([0, 0, 20])}
+            >
+              <Square aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Side view"
+              aria-label="Side view"
+              onClick={() => moveCamera([20, 0, 0])}
+            >
+              <View aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Top view"
+              aria-label="Top view"
+              onClick={() => moveCamera([0, 20, 0.01])}
+            >
+              <Scan aria-hidden="true" />
+            </Button>
+          </div>
+        ) : null}
       </div>
 
-      <div className="pointer-events-none absolute bottom-3 left-3 rounded-md border bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground shadow-sm">
-        {hovered
-          ? `${hovered.label}: (${hovered.cell.x}, ${hovered.cell.y}, ${hovered.cell.z}) · material ${hovered.cell.material}`
-          : quality === "high"
-            ? "Drag to rotate · scroll to zoom · hover for coordinates"
-            : "Drag to rotate · scroll to zoom"}
-      </div>
+      {!preview && showInteractionHint ? (
+        <div className="pointer-events-none absolute bottom-3 left-3 rounded-md border bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground shadow-sm">
+          {hovered
+            ? `${hovered.label}: (${hovered.cell.x}, ${hovered.cell.y}, ${hovered.cell.z}) · material ${hovered.cell.material}`
+            : quality === "high"
+              ? "Drag to rotate · scroll to zoom · hover for coordinates"
+              : "Drag to rotate · scroll to zoom"}
+        </div>
+      ) : null}
     </div>
   );
 }

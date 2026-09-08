@@ -20,6 +20,7 @@ interface VoxelWorldProps {
   controlsRef: React.RefObject<CameraControls | null>;
   groups: VoxelGroup[];
   quality: RenderQuality;
+  interactive?: boolean;
   transition?: VoxelTransition;
   onHover: (hovered: HoveredVoxel | null) => void;
 }
@@ -28,6 +29,7 @@ export function VoxelWorld({
   controlsRef,
   groups,
   quality,
+  interactive = true,
   transition,
   onHover,
 }: VoxelWorldProps) {
@@ -48,15 +50,17 @@ export function VoxelWorld({
     <>
       <color attach="background" args={["#e8edf0"]} />
       <fog attach="fog" args={["#e8edf0", 24, 42]} />
-      <CameraControls
-        ref={controlsRef}
-        makeDefault
-        smoothTime={reduceMotion ? 0 : 0.18}
-        minDistance={9}
-        maxDistance={34}
-        minPolarAngle={0.08}
-        maxPolarAngle={Math.PI / 2.03}
-      />
+      {interactive ? (
+        <CameraControls
+          ref={controlsRef}
+          makeDefault
+          smoothTime={reduceMotion ? 0 : 0.18}
+          minDistance={9}
+          maxDistance={34}
+          minPolarAngle={0.08}
+          maxPolarAngle={Math.PI / 2.03}
+        />
+      ) : null}
       <WorldLighting quality={quality} />
       {groups.map((group) => (
         <VoxelInstances

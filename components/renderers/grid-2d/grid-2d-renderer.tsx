@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { CellMap, GridSpec, coordinateKey, listAxisValues } from "@/lib/grid";
 import { MATCH_COLORS, getMaterialColor } from "@/lib/materials";
+import { cn } from "@/lib/utils";
 
 export type GridView = "compare" | "target" | "result";
 
@@ -13,6 +14,7 @@ interface Grid2DRendererProps {
   actual: CellMap;
   view: GridView;
   hasRun: boolean;
+  preview?: boolean;
 }
 
 const CELL_SIZE = 48;
@@ -25,13 +27,19 @@ export function Grid2DRenderer({
   actual,
   view,
   hasRun,
+  preview = false,
 }: Grid2DRendererProps) {
   const axis = useMemo(() => listAxisValues(grid), [grid]);
   const gridSize = axis.length * CELL_SIZE;
   const canvasSize = gridSize + MARGIN * 2;
 
   return (
-    <div className="flex h-full min-h-[420px] items-center justify-center overflow-auto bg-muted/20 p-3 sm:p-6">
+    <div
+      className={cn(
+        "flex h-full items-center justify-center overflow-auto bg-muted/20",
+        preview ? "min-h-0 p-2" : "min-h-[420px] p-3 sm:p-6"
+      )}
+    >
       <svg
         viewBox={`0 0 ${canvasSize} ${canvasSize}`}
         className="aspect-square max-h-full w-full max-w-[680px]"
