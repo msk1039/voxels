@@ -2,9 +2,10 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Code2, Lock } from "lucide-react";
+import { toast } from "sonner";
 
-import { CompletionDialog } from "@/components/game/completion-dialog";
 import {
   EditorError,
   EquationEditor,
@@ -226,6 +227,7 @@ function ActiveLevel({
   completeLevel: (completion: LevelCompletion) => void;
 }) {
   const emptyCells = useMemo<CellMap>(() => new Map(), []);
+  const router = useRouter();
   const [source, setSource] = useState(level.starterExpression);
   const [actual, setActual] = useState<CellMap>(emptyCells);
   const [hasRun, setHasRun] = useState(false);
@@ -233,8 +235,6 @@ function ActiveLevel({
   const [error, setError] = useState<EditorError | null>(null);
   const [view, setView] = useState<GridView>("compare");
   const [usedHint, setUsedHint] = useState(false);
-  const [complexity, setComplexity] = useState(0);
-  const [completionOpen, setCompletionOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [cameraPose, setCameraPose] = useState<CameraPose | null>(null);
   const [transition, setTransition] = useState<VoxelTransition | null>(null);
@@ -261,10 +261,29 @@ function ActiveLevel({
           efficientCost: level.efficientCost,
           usedHint: result.usedHint,
         });
-        setCompletionOpen(true);
+        const bonuses = [
+          !result.usedHint ? "No hints" : null,
+          result.complexity <= level.efficientCost
+            ? "Efficient equation"
+            : null,
+        ].filter(Boolean);
+        const nextHref = next ? `/play/${next.mode}/${next.id}` : "/";
+        toast.success("Level complete", {
+          id: `level-complete:${level.mode}:${level.id}`,
+          description: [
+            `${level.title} matched exactly.`,
+            bonuses.join(" · "),
+          ]
+            .filter(Boolean)
+            .join(" "),
+          action: {
+            label: next ? "Next level" : "Back to tracks",
+            onClick: () => router.push(nextHref),
+          },
+        });
       }
     },
-    [completeLevel, level]
+    [completeLevel, level, next, router]
   );
 
   const handleTransitionComplete = useCallback(
@@ -285,7 +304,6 @@ function ActiveLevel({
       const nextMatch = matchCells(level.target, evaluation.cells);
       const difference = diffCellMaps(actual, evaluation.cells);
       setActual(evaluation.cells);
-      setComplexity(evaluation.complexity);
       setHasRun(true);
       setError(null);
       setView("compare");
@@ -473,14 +491,6 @@ function ActiveLevel({
           </section>
         </div>
       )}
-      <CompletionDialog
-        level={level}
-        open={completionOpen}
-        usedHint={usedHint}
-        complexity={complexity}
-        nextHref={next ? `/play/${next.mode}/${next.id}` : undefined}
-        onOpenChange={setCompletionOpen}
-      />
     </>
   );
 }
