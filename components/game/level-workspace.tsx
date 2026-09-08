@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CircleHelp, Code2, Lock } from "lucide-react";
 
@@ -16,6 +16,7 @@ import {
   GridView,
 } from "@/components/renderers/grid-2d/grid-2d-renderer";
 import { VoxelCanvas } from "@/components/renderers/voxel-3d/voxel-canvas";
+import { VoxelTransition } from "@/components/renderers/voxel-3d/types";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -49,7 +50,7 @@ import {
 import { useGridWorker } from "@/hooks/use-grid-worker";
 import { useIsDesktop } from "@/hooks/use-desktop";
 import { EquationError, EquationMode, getErrorLocation } from "@/lib/equation";
-import { CellMap, matchCells } from "@/lib/grid";
+import { CellMap, diffCellMaps, matchCells } from "@/lib/grid";
 import {
   LevelCompletion,
   isLevelUnlocked,
@@ -67,6 +68,8 @@ interface WorkspaceContentProps {
   actual: CellMap;
   view: GridView;
   hasRun: boolean;
+  transition: VoxelTransition | null;
+  onTransitionComplete: (id: number) => void;
 }
 
 function WorkspaceContent({
@@ -74,6 +77,8 @@ function WorkspaceContent({
   actual,
   view,
   hasRun,
+  transition,
+  onTransitionComplete,
 }: WorkspaceContentProps) {
   if (level.mode === "2d") {
     return (
@@ -94,8 +99,18 @@ function WorkspaceContent({
       view={view}
       hasRun={hasRun}
       camera={level.camera}
+      transition={transition ?? undefined}
+      onTransitionComplete={onTransitionComplete}
     />
   );
+}
+
+interface PendingRun {
+  transitionId: number;
+  expression: string;
+  complexity: number;
+  usedHint: boolean;
+  exact: boolean;
 }
 
 interface ControlPanelProps {
@@ -223,6 +238,9 @@ function ActiveLevel({
   const [usedHint, setUsedHint] = useState(false);
   const [complexity, setComplexity] = useState(0);
   const [completionOpen, setCompletionOpen] = useState(false);
+  const [transition, setTransition] = useState<VoxelTransition | null>(null);
+  const transitionId = useRef(0);
+  const pendingRun = useRef<PendingRun | null>(null);
   const runGrid = useGridWorker();
   const desktop = useIsDesktop();
 
@@ -232,26 +250,63 @@ function ActiveLevel({
   );
   const next = getNextLevel(level);
 
+  const finishRun = useCallback(
+    (result: PendingRun) => {
+      setTransition(null);
+      setPending(false);
+      if (result.exact) {
+        completeLevel({
+          levelKey: levelProgressKey(level.mode, level.id),
+          expression: result.expression,
+          complexity: result.complexity,
+          efficientCost: level.efficientCost,
+          usedHint: result.usedHint,
+        });
+        setCompletionOpen(true);
+      }
+    },
+    [completeLevel, level]
+  );
+
+  const handleTransitionComplete = useCallback(
+    (id: number) => {
+      const result = pendingRun.current;
+      if (!result || result.transitionId !== id) return;
+      pendingRun.current = null;
+      finishRun(result);
+    },
+    [finishRun]
+  );
+
   async function runEquation() {
     if (pending) return;
     setPending(true);
     try {
       const evaluation = await runGrid(source, level.mode, level.grid);
       const nextMatch = matchCells(level.target, evaluation.cells);
+      const difference = diffCellMaps(actual, evaluation.cells);
       setActual(evaluation.cells);
       setComplexity(evaluation.complexity);
       setHasRun(true);
       setError(null);
       setView("compare");
-      if (nextMatch.exact) {
-        completeLevel({
-          levelKey: levelProgressKey(level.mode, level.id),
-          expression: source,
-          complexity: evaluation.complexity,
-          efficientCost: level.efficientCost,
-          usedHint,
-        });
-        setCompletionOpen(true);
+      const hasVoxelChanges =
+        difference.enteringKeys.size > 0 || difference.leaving.length > 0;
+      const result: PendingRun = {
+        transitionId: 0,
+        expression: source,
+        complexity: evaluation.complexity,
+        usedHint,
+        exact: nextMatch.exact,
+      };
+
+      if (level.mode === "3d" && hasVoxelChanges) {
+        const id = transitionId.current + 1;
+        transitionId.current = id;
+        pendingRun.current = { ...result, transitionId: id };
+        setTransition({ id, ...difference });
+      } else {
+        finishRun(result);
       }
     } catch (caught) {
       if (caught instanceof EquationError) {
@@ -264,7 +319,8 @@ function ActiveLevel({
           column: 1,
         });
       }
-    } finally {
+      pendingRun.current = null;
+      setTransition(null);
       setPending(false);
     }
   }
@@ -303,6 +359,8 @@ function ActiveLevel({
           actual={actual}
           view={view}
           hasRun={hasRun}
+          transition={transition}
+          onTransitionComplete={handleTransitionComplete}
         />
       </div>
     </div>

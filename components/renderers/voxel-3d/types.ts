@@ -1,4 +1,4 @@
-import { Cell } from "@/lib/grid";
+import { Cell, CellTransitionDiff } from "@/lib/grid";
 
 export type RenderQuality = "high" | "reduced";
 
@@ -13,4 +13,8 @@ export interface VoxelGroup {
 export interface HoveredVoxel {
   cell: Cell;
   label: string;
+}
+
+export interface VoxelTransition extends CellTransitionDiff {
+  id: number;
 }

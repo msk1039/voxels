@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   EditorError,
@@ -8,6 +8,7 @@ import {
 } from "@/components/game/equation-editor";
 import { Grid2DRenderer } from "@/components/renderers/grid-2d/grid-2d-renderer";
 import { VoxelCanvas } from "@/components/renderers/voxel-3d/voxel-canvas";
+import { VoxelTransition } from "@/components/renderers/voxel-3d/types";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -20,7 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DEFAULT_GRID } from "@/content/levels";
 import { useGridWorker } from "@/hooks/use-grid-worker";
 import { EquationError, EquationMode, getErrorLocation } from "@/lib/equation";
-import { CellMap } from "@/lib/grid";
+import { CellMap, diffCellMaps } from "@/lib/grid";
 import { SANDBOX_STARTERS } from "@/lib/sandbox";
 
 import { useSandboxDrafts } from "./use-sandbox-drafts";
@@ -46,8 +47,18 @@ export function SandboxWorkspace() {
     "3d": null,
   });
   const [pendingMode, setPendingMode] = useState<EquationMode | null>(null);
+  const [transition, setTransition] = useState<VoxelTransition | null>(null);
+  const transitionId = useRef(0);
+  const activeTransitionId = useRef<number | null>(null);
   const { drafts, setSource } = useSandboxDrafts();
   const runGrid = useGridWorker();
+
+  const handleTransitionComplete = useCallback((id: number) => {
+    if (activeTransitionId.current !== id) return;
+    activeTransitionId.current = null;
+    setTransition(null);
+    setPendingMode(null);
+  }, []);
 
   async function runEquation() {
     if (pendingMode) return;
@@ -57,6 +68,7 @@ export function SandboxWorkspace() {
 
     try {
       const evaluation = await runGrid(source, runMode, DEFAULT_GRID);
+      const difference = diffCellMaps(results[runMode], evaluation.cells);
       setResults((current) => ({ ...current, [runMode]: evaluation.cells }));
       setHasRun((current) => ({ ...current, [runMode]: true }));
       setComplexity((current) => ({
@@ -64,6 +76,17 @@ export function SandboxWorkspace() {
         [runMode]: evaluation.complexity,
       }));
       setErrors((current) => ({ ...current, [runMode]: null }));
+      const hasVoxelChanges =
+        difference.enteringKeys.size > 0 || difference.leaving.length > 0;
+
+      if (runMode === "3d" && hasVoxelChanges) {
+        const id = transitionId.current + 1;
+        transitionId.current = id;
+        activeTransitionId.current = id;
+        setTransition({ id, ...difference });
+      } else {
+        setPendingMode(null);
+      }
     } catch (caught) {
       const error =
         caught instanceof EquationError
@@ -77,7 +100,8 @@ export function SandboxWorkspace() {
               column: 1,
             };
       setErrors((current) => ({ ...current, [runMode]: error }));
-    } finally {
+      activeTransitionId.current = null;
+      setTransition(null);
       setPendingMode(null);
     }
   }
@@ -98,8 +122,12 @@ export function SandboxWorkspace() {
           onValueChange={(value) => setMode(value as EquationMode)}
         >
           <TabsList>
-            <TabsTrigger value="2d">2D</TabsTrigger>
-            <TabsTrigger value="3d">3D</TabsTrigger>
+            <TabsTrigger value="2d" disabled={pendingMode !== null}>
+              2D
+            </TabsTrigger>
+            <TabsTrigger value="3d" disabled={pendingMode !== null}>
+              3D
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
@@ -121,6 +149,8 @@ export function SandboxWorkspace() {
                 actual={result}
                 view="result"
                 hasRun={hasRun[mode]}
+                transition={transition ?? undefined}
+                onTransitionComplete={handleTransitionComplete}
               />
             )}
           </div>

@@ -7,7 +7,12 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 import { createClayTexture } from "./clay-texture";
-import { HoveredVoxel, RenderQuality, VoxelGroup } from "./types";
+import {
+  HoveredVoxel,
+  RenderQuality,
+  VoxelGroup,
+  VoxelTransition,
+} from "./types";
 import { VoxelInstances } from "./voxel-instances";
 import { WorldLighting } from "./world-lighting";
 
@@ -15,6 +20,7 @@ interface VoxelWorldProps {
   controlsRef: React.RefObject<CameraControls | null>;
   groups: VoxelGroup[];
   quality: RenderQuality;
+  transition?: VoxelTransition;
   onHover: (hovered: HoveredVoxel | null) => void;
 }
 
@@ -22,6 +28,7 @@ export function VoxelWorld({
   controlsRef,
   groups,
   quality,
+  transition,
   onHover,
 }: VoxelWorldProps) {
   const reduceMotion = useReducedMotion();
@@ -59,6 +66,8 @@ export function VoxelWorld({
           detailTexture={detailTexture}
           quality={quality}
           reduceMotion={reduceMotion}
+          transition={transition}
+          leaving={group.id === "leaving"}
           onHover={onHover}
         />
       ))}
