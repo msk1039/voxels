@@ -3,14 +3,18 @@
 import { useCallback } from "react";
 import { DataTexture, WebGLProgramParametersWithUniforms } from "three";
 
+import { RenderQuality } from "./types";
+
 interface StylizedVoxelMaterialProps {
   detailTexture?: DataTexture;
   ghost?: boolean;
+  quality: RenderQuality;
 }
 
 export function StylizedVoxelMaterial({
   detailTexture,
   ghost,
+  quality,
 }: StylizedVoxelMaterialProps) {
   const patchShader = useCallback((shader: WebGLProgramParametersWithUniforms) => {
     shader.vertexShader = shader.vertexShader
@@ -48,6 +52,18 @@ export function StylizedVoxelMaterial({
          diffuseColor.rgb += voxelTop * 0.015;`
       );
   }, []);
+
+  if (quality === "reduced") {
+    return (
+      <meshLambertMaterial
+        transparent={ghost}
+        opacity={ghost ? 0.34 : 1}
+        depthWrite={!ghost}
+        onBeforeCompile={patchShader}
+        customProgramCacheKey={() => "voxels-reduced-v1"}
+      />
+    );
+  }
 
   return (
     <meshStandardMaterial

@@ -12,7 +12,7 @@ export function WorldLighting({ quality }: { quality: RenderQuality }) {
       <ambientLight intensity={0.42} />
       <hemisphereLight args={["#dbeeff", "#876f59", 1.2]} />
       <directionalLight
-        castShadow
+        castShadow={high}
         color="#fff0d5"
         intensity={2.5}
         position={[8, 13, 7]}

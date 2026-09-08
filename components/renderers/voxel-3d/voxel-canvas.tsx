@@ -180,7 +180,7 @@ export function VoxelCanvas({
           near: 0.1,
           far: 100,
         }}
-        shadows
+        shadows={quality === "high"}
         gl={{
           antialias: quality === "reduced",
           alpha: false,

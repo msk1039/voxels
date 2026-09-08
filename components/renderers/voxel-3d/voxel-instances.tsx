@@ -149,8 +149,8 @@ export function VoxelInstances({
       ref={mesh}
       args={[geometry, undefined, group.cells.length]}
       instanceColor={instanceColors}
-      castShadow={!group.ghost}
-      receiveShadow={!group.ghost}
+      castShadow={quality === "high" && !group.ghost}
+      receiveShadow={quality === "high" && !group.ghost}
       dispose={null}
       onPointerMove={quality === "high" ? handlePointerMove : undefined}
       onPointerOut={quality === "high" ? () => onHover(null) : undefined}
@@ -158,6 +158,7 @@ export function VoxelInstances({
       <StylizedVoxelMaterial
         detailTexture={detailTexture}
         ghost={group.ghost}
+        quality={quality}
       />
     </instancedMesh>
   );
