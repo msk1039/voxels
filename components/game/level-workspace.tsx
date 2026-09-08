@@ -264,24 +264,33 @@ function ActiveLevel({
           efficientCost: level.efficientCost,
           usedHint: result.usedHint,
         });
-        const bonuses = [
-          !result.usedHint ? "No hints" : null,
-          result.complexity <= level.efficientCost
-            ? "Efficient equation"
-            : null,
-        ].filter(Boolean);
+        const completionToastId = `level-complete:${level.mode}:${level.id}`;
         const nextHref = next ? `/play/${next.mode}/${next.id}` : "/";
         toast.success("Level complete", {
-          id: `level-complete:${level.mode}:${level.id}`,
-          description: [
-            `${level.title} matched exactly.`,
-            bonuses.join(" · "),
-          ]
-            .filter(Boolean)
-            .join(" "),
+          id: completionToastId,
+          duration: Infinity,
+          dismissible: false,
+          position: "top-center",
+          className:
+            "!rounded-[20px] !border-emerald-700 !bg-emerald-600 !px-5 !py-4 !text-white [corner-shape:squircle]",
+          classNames: {
+            title: "!text-base !font-semibold !text-white",
+            icon: "!text-white",
+            cancelButton:
+              "!h-8 !rounded-[8px] !border !border-emerald-200/60 !bg-emerald-700 !px-3 !text-white [corner-shape:squircle] hover:!bg-emerald-800",
+            actionButton:
+              "!h-8 !rounded-[8px] !bg-white !px-3 !text-emerald-700 [corner-shape:squircle] hover:!bg-emerald-50",
+          },
+          cancel: {
+            label: "Dismiss",
+            onClick: () => toast.dismiss(completionToastId),
+          },
           action: {
-            label: next ? "Next level" : "Back to tracks",
-            onClick: () => router.push(nextHref),
+            label: "Next",
+            onClick: () => {
+              toast.dismiss(completionToastId);
+              router.push(nextHref);
+            },
           },
         });
       }

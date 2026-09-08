@@ -40,7 +40,10 @@ export default function RootLayout({
           <SettingsProvider>
             <TooltipProvider>
               {children}
-              <Toaster />
+              <Toaster
+                position="top-center"
+                className="[--width:min(92vw,34rem)]"
+              />
             </TooltipProvider>
           </SettingsProvider>
         </ProgressProvider>
