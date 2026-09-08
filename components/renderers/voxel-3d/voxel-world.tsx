@@ -50,17 +50,16 @@ export function VoxelWorld({
     <>
       <color attach="background" args={["#e8edf0"]} />
       <fog attach="fog" args={["#e8edf0", 24, 42]} />
-      {interactive ? (
-        <CameraControls
-          ref={controlsRef}
-          makeDefault
-          smoothTime={reduceMotion ? 0 : 0.18}
-          minDistance={9}
-          maxDistance={34}
-          minPolarAngle={0.08}
-          maxPolarAngle={Math.PI / 2.03}
-        />
-      ) : null}
+      <CameraControls
+        ref={controlsRef}
+        makeDefault
+        enabled={interactive}
+        smoothTime={reduceMotion ? 0 : 0.18}
+        minDistance={9}
+        maxDistance={34}
+        minPolarAngle={0.08}
+        maxPolarAngle={Math.PI / 2.03}
+      />
       <WorldLighting quality={quality} />
       {groups.map((group) => (
         <VoxelInstances
