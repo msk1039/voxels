@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CameraControls, PerformanceMonitor } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { EffectComposer, N8AO, ToneMapping } from "@react-three/postprocessing";
@@ -13,11 +13,12 @@ import { Button } from "@/components/ui/button";
 import { useDevicePixelRatio } from "@/hooks/use-device-pixel-ratio";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { useRenderVisibility } from "@/hooks/use-render-visibility";
 import { CellMap, GridSpec } from "@/lib/grid";
 import { cn } from "@/lib/utils";
 
 import { GridView } from "../grid-2d/grid-2d-renderer";
-import { FrameLimiter } from "./frame-limiter";
+import { ActivityFrameLoop } from "./activity-frame-loop";
 import { calculateRenderDpr } from "./render-resolution";
 import {
   CameraPose,
@@ -66,6 +67,7 @@ export function VoxelCanvas({
   onCameraChange,
   camera = DEFAULT_CAMERA,
 }: VoxelCanvasProps) {
+  const container = useRef<HTMLDivElement>(null);
   const controls = useRef<CameraControls>(null);
   const { settings } = useSettings();
   const mobile = useIsMobile();
@@ -73,6 +75,8 @@ export function VoxelCanvas({
   const devicePixelRatio = useDevicePixelRatio();
   const [performanceReduced, setPerformanceReduced] = useState(false);
   const [hovered, setHovered] = useState<HoveredVoxel | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const visible = useRenderVisibility(container);
   const baseGroups = useMemo(
     () => createVoxelGroups(target, actual, view, hasRun),
     [actual, hasRun, target, view]
@@ -105,10 +109,35 @@ export function VoxelCanvas({
     renderScale: settings.renderScale,
     performanceReduced,
   });
-  const explicitFrameRate =
-    settings.frameRate === "auto"
-      ? null
-      : (Number(settings.frameRate) as 30 | 60);
+  const activeFrameRate =
+    settings.frameRate === "30" ? 30 : 60;
+  const animatedTransition =
+    Boolean(transition) && !reduceMotion && quality === "high";
+  const renderActive = cameraActive || animatedTransition;
+  const renderSignal = useMemo(
+    () => ({
+      cameraPose,
+      grid,
+      groups,
+      hasRun,
+      quality,
+      renderDpr,
+      transition,
+      view,
+    }),
+    [
+      cameraPose,
+      grid,
+      groups,
+      hasRun,
+      quality,
+      renderDpr,
+      transition,
+      view,
+    ]
+  );
+  const beginCameraRender = useCallback(() => setCameraActive(true), []);
+  const endCameraRender = useCallback(() => setCameraActive(false), []);
 
   useEffect(() => {
     if (!transition || !onTransitionComplete) return;
@@ -135,6 +164,7 @@ export function VoxelCanvas({
 
   return (
     <div
+      ref={container}
       className={cn(
         "relative h-full overflow-hidden bg-muted/20",
         preview ? "min-h-0" : "min-h-[420px]"
@@ -143,9 +173,7 @@ export function VoxelCanvas({
       <Canvas
         style={{ position: "absolute", inset: 0 }}
         dpr={renderDpr}
-        frameloop={
-          preview ? "demand" : explicitFrameRate ? "never" : "always"
-        }
+        frameloop="never"
         camera={{
           position: camera.position,
           fov: 34,
@@ -162,13 +190,15 @@ export function VoxelCanvas({
         }}
         aria-label={`${view} three-dimensional voxel grid from ${grid.min} to ${grid.max}`}
       >
-        {!preview && explicitFrameRate ? (
-          <FrameLimiter fps={explicitFrameRate} />
-        ) : null}
+        <ActivityFrameLoop
+          active={renderActive}
+          fps={activeFrameRate}
+          renderSignal={renderSignal}
+          visible={visible}
+        />
         {!preview &&
         (settings.graphicsQuality === "auto" ||
           settings.renderScale === "auto") &&
-        !explicitFrameRate &&
         !mobile ? (
           <PerformanceMonitor
             flipflops={2}
@@ -185,6 +215,8 @@ export function VoxelCanvas({
           interactive={!preview}
           cameraPose={cameraPose}
           onCameraChange={onCameraChange}
+          onRenderStart={beginCameraRender}
+          onRenderStop={endCameraRender}
           transition={transition}
           onHover={setHovered}
         />

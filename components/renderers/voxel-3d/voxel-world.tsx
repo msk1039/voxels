@@ -28,6 +28,8 @@ interface VoxelWorldProps {
   interactive?: boolean;
   cameraPose?: CameraPose;
   onCameraChange?: (pose: CameraPose) => void;
+  onRenderStart?: () => void;
+  onRenderStop?: () => void;
   transition?: VoxelTransition;
   onHover: (hovered: HoveredVoxel | null) => void;
 }
@@ -40,6 +42,8 @@ export function VoxelWorld({
   interactive = true,
   cameraPose,
   onCameraChange,
+  onRenderStart,
+  onRenderStop,
   transition,
   onHover,
 }: VoxelWorldProps) {
@@ -99,6 +103,11 @@ export function VoxelWorld({
         makeDefault
         enabled={interactive}
         onChange={onCameraChange ? handleCameraChange : undefined}
+        onControlStart={onRenderStart}
+        onControl={onRenderStart}
+        onTransitionStart={onRenderStart}
+        onWake={onRenderStart}
+        onSleep={onRenderStop}
         smoothTime={reduceMotion ? 0 : 0.18}
         minDistance={9}
         maxDistance={34}
