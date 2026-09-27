@@ -8,6 +8,10 @@ export function isLevelUnlocked(
   progress: ProgressState
 ): boolean {
   if (level.order === 1) return true;
+  // A level cleared earlier stays open even if the order changes later.
+  if (progress.levels[levelProgressKey(level.mode, level.id)]?.completed) {
+    return true;
+  }
   const previous = getLevelsForMode(level.mode).find(
     (candidate) => candidate.order === level.order - 1
   );

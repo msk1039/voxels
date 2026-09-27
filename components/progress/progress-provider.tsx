@@ -8,19 +8,35 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { announceAchievements } from "@/components/game/achievement-toast";
 import {
+  Achievement,
   EMPTY_PROGRESS,
   LevelCompletion,
+  PROGRESS_STORAGE_KEY,
   ProgressState,
+  RunRecord,
   applyLevelCompletion,
   clearLevelProgress,
+  findNewAchievements,
   loadProgress,
+  recordHintOpened,
+  recordRun,
   saveProgress,
+  unlockAchievements,
 } from "@/lib/progress";
+
+export interface ProgressOutcome {
+  previous: ProgressState;
+  next: ProgressState;
+  newAchievements: Achievement[];
+}
 
 interface ProgressContextValue {
   progress: ProgressState;
-  completeLevel: (completion: LevelCompletion) => void;
+  completeLevel: (completion: LevelCompletion) => ProgressOutcome;
+  recordRun: (run: RunRecord) => void;
+  recordHintOpened: () => void;
   resetProgress: () => void;
 }
 
@@ -33,9 +49,21 @@ function emitChange() {
   for (const listener of listeners) listener();
 }
 
+/**
+ * Loads stored progress and silently records achievements it already
+ * earns, such as after migrating from a version without achievements.
+ */
+function loadWithAchievements() {
+  const stored = loadProgress(window.localStorage);
+  return unlockAchievements(
+    stored,
+    findNewAchievements(stored).map((achievement) => achievement.id)
+  );
+}
+
 function readBrowserProgress() {
   if (!loaded && typeof window !== "undefined") {
-    cachedProgress = loadProgress(window.localStorage);
+    cachedProgress = loadWithAchievements();
     loaded = true;
   }
   return cachedProgress;
@@ -44,8 +72,8 @@ function readBrowserProgress() {
 function subscribe(listener: () => void) {
   listeners.add(listener);
   const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === "voxels:level-progress:v1") {
-      cachedProgress = loadProgress(window.localStorage);
+    if (event.key === null || event.key === PROGRESS_STORAGE_KEY) {
+      cachedProgress = loadWithAchievements();
       loaded = true;
       emitChange();
     }
@@ -64,6 +92,20 @@ function writeProgress(progress: ProgressState) {
   emitChange();
 }
 
+/** Applies an update, records any achievements it earns, and announces them. */
+function commit(update: (state: ProgressState) => ProgressState): ProgressOutcome {
+  const previous = readBrowserProgress();
+  const updated = update(previous);
+  const newAchievements = findNewAchievements(updated);
+  const next = unlockAchievements(
+    updated,
+    newAchievements.map((achievement) => achievement.id)
+  );
+  writeProgress(next);
+  if (newAchievements.length > 0) announceAchievements(newAchievements);
+  return { previous, next, newAchievements };
+}
+
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const progress = useSyncExternalStore(
     subscribe,
@@ -74,8 +116,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ProgressContextValue>(
     () => ({
       progress,
-      completeLevel: (completion) => {
-        writeProgress(applyLevelCompletion(readBrowserProgress(), completion));
+      completeLevel: (completion) =>
+        commit((state) => applyLevelCompletion(state, completion)),
+      recordRun: (run) => {
+        commit((state) => recordRun(state, run));
+      },
+      recordHintOpened: () => {
+        commit(recordHintOpened);
       },
       resetProgress: () => {
         clearLevelProgress(window.localStorage);

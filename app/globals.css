@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-pixel-body);
+  --font-mono: var(--font-pixel-mono);
+  --font-heading: var(--font-pixel-display);
+  --font-display: var(--font-pixel-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,93 +40,222 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-sky: var(--sky);
+  --color-grass: var(--grass);
+  --color-dirt: var(--dirt);
+  --color-stone: var(--stone);
+  --color-redstone: var(--redstone);
+  --color-diamond: var(--diamond);
+  --color-panel-hi: var(--panel-hi);
+  --color-panel-lo: var(--panel-lo);
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
 }
 
+/* One "night" palette. Earthy block colours with a gold accent. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  color-scheme: dark;
+  --background: #16151d;
+  --foreground: #f1ecdf;
+  --card: #2a2833;
+  --card-foreground: #f1ecdf;
+  --popover: #2a2833;
+  --popover-foreground: #f1ecdf;
+  --primary: #5fae3c;
+  --primary-foreground: #0e1a08;
+  --secondary: #55535f;
+  --secondary-foreground: #f1ecdf;
+  --muted: #211f29;
+  --muted-foreground: #a29db2;
+  --accent: #38354a;
+  --accent-foreground: #f1ecdf;
+  --destructive: #d8453b;
+  --border: #09080d;
+  --input: #3a3845;
+  --ring: #f2c14e;
+  --chart-1: #5fae3c;
+  --chart-2: #4fb3d9;
+  --chart-3: #f2c14e;
+  --chart-4: #d8453b;
+  --chart-5: #9a74b7;
+  --radius: 0rem;
+  --sidebar: #1e1c26;
+  --sidebar-foreground: #f1ecdf;
+  --sidebar-primary: #5fae3c;
+  --sidebar-primary-foreground: #0e1a08;
+  --sidebar-accent: #2f2d3a;
+  --sidebar-accent-foreground: #f1ecdf;
+  --sidebar-border: #09080d;
+  --sidebar-ring: #f2c14e;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --gold: #f2c14e;
+  --gold-foreground: #2b1d05;
+  --sky: #6fb6e8;
+  --grass: #5fae3c;
+  --dirt: #7a5334;
+  --stone: #6d6b75;
+  --redstone: #d8453b;
+  --diamond: #4fd6d0;
+  --panel-hi: rgb(255 255 255 / 0.12);
+  --panel-lo: rgb(0 0 0 / 0.38);
+  --pixel: 3px;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/60;
+  }
+  /* Pixel art has no curves. Base-layer !important outranks utility layers. */
+  *,
+  *::before,
+  *::after {
+    border-radius: 0 !important;
   }
   body {
     @apply bg-background text-foreground;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.018) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
   html {
     @apply font-sans;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background: var(--gold);
+    color: var(--gold-foreground);
+  }
+}
+
+/* Stepped-corner outline: four offset shadows leave the corner pixel empty. */
+@utility pixel-border {
+  box-shadow:
+    0 calc(var(--pixel) * -1) 0 0 var(--border),
+    0 var(--pixel) 0 0 var(--border),
+    calc(var(--pixel) * -1) 0 0 0 var(--border),
+    var(--pixel) 0 0 0 var(--border);
+}
+
+/* A raised block: lit top-left, shaded bottom-right, stepped outline. */
+@utility pixel-bevel {
+  box-shadow:
+    inset calc(var(--pixel) * -1) calc(var(--pixel) * -1) 0 0 var(--panel-lo),
+    inset var(--pixel) var(--pixel) 0 0 var(--panel-hi),
+    0 calc(var(--pixel) * -1) 0 0 var(--border),
+    0 var(--pixel) 0 0 var(--border),
+    calc(var(--pixel) * -1) 0 0 0 var(--border),
+    var(--pixel) 0 0 0 var(--border);
+}
+
+/* The pressed state of pixel-bevel. */
+@utility pixel-inset {
+  box-shadow:
+    inset var(--pixel) var(--pixel) 0 0 var(--panel-lo),
+    inset calc(var(--pixel) * -1) calc(var(--pixel) * -1) 0 0 var(--panel-hi),
+    0 calc(var(--pixel) * -1) 0 0 var(--border),
+    0 var(--pixel) 0 0 var(--border),
+    calc(var(--pixel) * -1) 0 0 0 var(--border),
+    var(--pixel) 0 0 0 var(--border);
+}
+
+/* A GUI panel with a dithered stone texture. */
+@utility pixel-panel {
+  background-color: var(--card);
+  background-image:
+    radial-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    radial-gradient(rgb(0 0 0 / 0.12) 1px, transparent 1px);
+  background-size: 6px 6px, 6px 6px;
+  background-position: 0 0, 3px 3px;
+  box-shadow:
+    inset calc(var(--pixel) * -1) calc(var(--pixel) * -1) 0 0 var(--panel-lo),
+    inset var(--pixel) var(--pixel) 0 0 var(--panel-hi),
+    0 calc(var(--pixel) * -1) 0 0 var(--border),
+    0 var(--pixel) 0 0 var(--border),
+    calc(var(--pixel) * -1) 0 0 0 var(--border),
+    var(--pixel) 0 0 0 var(--border),
+    0 calc(var(--pixel) * 2) 0 0 rgb(0 0 0 / 0.35);
+}
+
+/* A sunken well, used for inputs and render viewports. */
+@utility pixel-well {
+  background-color: #110f16;
+  box-shadow:
+    inset var(--pixel) var(--pixel) 0 0 rgb(0 0 0 / 0.55),
+    inset calc(var(--pixel) * -1) calc(var(--pixel) * -1) 0 0 rgb(255 255 255 / 0.07),
+    0 calc(var(--pixel) * -1) 0 0 var(--border),
+    0 var(--pixel) 0 0 var(--border),
+    calc(var(--pixel) * -1) 0 0 0 var(--border),
+    var(--pixel) 0 0 0 var(--border);
+}
+
+@utility pixelated {
+  image-rendering: pixelated;
+}
+
+@utility text-shadow-pixel {
+  text-shadow: 2px 2px 0 rgb(0 0 0 / 0.55);
+}
+
+@keyframes pixel-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-4px, 0); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-2px, 2px); }
+  80% { transform: translate(2px, 0); }
+}
+
+@keyframes pixel-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes pixel-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes pixel-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pixel-particle {
+  0% { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
+@utility animate-pixel-shake {
+  animation: pixel-shake 320ms steps(5) both;
+}
+
+@utility animate-pixel-blink {
+  animation: pixel-blink 1s steps(1) infinite;
+}
+
+@utility animate-pixel-bob {
+  animation: pixel-bob 1.2s steps(2) infinite;
+}
+
+@utility animate-pixel-pop {
+  animation: pixel-pop 360ms steps(4) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pixel-shake,
+  .animate-pixel-bob,
+  .animate-pixel-pop {
+    animation: none;
   }
 }
 

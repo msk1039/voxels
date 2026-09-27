@@ -2,14 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { CameraControls } from "@react-three/drei";
-import { Vector3 } from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { useFrame } from "@react-three/fiber";
+import { BoxGeometry, Group, Vector3 } from "three";
 
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { GridSpec } from "@/lib/grid";
+import { GridSpec, coordinateKey } from "@/lib/grid";
 
-import { createClayTexture } from "./clay-texture";
+import { BlockBurst } from "./block-burst";
 import { CoordinateGuide } from "./coordinate-guide";
+import { SKY_COLORS, SkyDome } from "./sky-dome";
 import {
   CameraPose,
   HoveredVoxel,
@@ -33,8 +34,16 @@ interface VoxelWorldProps {
   onRenderStart?: () => void;
   onRenderStop?: () => void;
   transition?: VoxelTransition;
+  /** Slowly orbit the camera, for attract mode. */
+  autoRotate?: boolean;
+  animateTransitions: boolean;
+  /** A non-zero id throws a burst of block shards; a new id throws another. */
+  burstId?: number;
   onHover: (hovered: HoveredVoxel | null) => void;
 }
+
+/** Radians per second for attract-mode orbiting. */
+const AUTO_ROTATE_SPEED = 0.18;
 
 export function VoxelWorld({
   controlsRef,
@@ -47,6 +56,9 @@ export function VoxelWorld({
   onRenderStart,
   onRenderStop,
   transition,
+  autoRotate = false,
+  animateTransitions,
+  burstId = 0,
   onHover,
 }: VoxelWorldProps) {
   const reduceMotion = useReducedMotion();
@@ -54,17 +66,32 @@ export function VoxelWorld({
   const lastCameraSync = useRef(0);
   const cameraPosition = useRef(new Vector3());
   const cameraTarget = useRef(new Vector3());
-  const geometry = useMemo(
-    () => new RoundedBoxGeometry(0.86, 0.86, 0.86, quality === "high" ? 4 : 2, 0.085),
-    [quality]
-  );
-  const detailTexture = useMemo(
-    () => (quality === "high" ? createClayTexture(64) : undefined),
-    [quality]
-  );
+  const geometry = useMemo(() => new BoxGeometry(1, 1, 1), []);
+  // Solid blocks shade their neighbours. Glass ghosts and blocks that are
+  // on their way out do not.
+  const solidKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const group of groups) {
+      if (group.ghost || group.id === "leaving") continue;
+      for (const cell of group.cells) keys.add(coordinateKey(cell));
+    }
+    return keys;
+  }, [groups]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
-  useEffect(() => () => detailTexture?.dispose(), [detailTexture]);
+  const burstCells = useMemo(
+    () => groups.filter((group) => !group.ghost).flatMap((group) => group.cells),
+    [groups]
+  );
+
+  // Attract mode spins the world rather than the camera, so camera
+  // controls stay asleep and do not toggle the render loop every frame.
+  const spin = useRef<Group>(null);
+  useFrame((_, delta) => {
+    if (!autoRotate || reduceMotion || !spin.current) return;
+    // Cap delta so a paused tab does not jump the scene on resume.
+    spin.current.rotation.y += Math.min(delta, 0.1) * AUTO_ROTATE_SPEED;
+  });
   useEffect(() => {
     if (!cameraPose) return;
     void controlsRef.current?.setLookAt(
@@ -123,7 +150,8 @@ export function VoxelWorld({
 
   return (
     <>
-      <color attach="background" args={["#e8edf0"]} />
+      <color attach="background" args={[SKY_COLORS.horizon]} />
+      <SkyDome />
       <CameraControls
         ref={controlsRef}
         makeDefault
@@ -142,20 +170,25 @@ export function VoxelWorld({
         maxPolarAngle={Math.PI / 2.03}
       />
       <WorldLighting quality={quality} />
-      <CoordinateGuide grid={grid} showScale={interactive} />
-      {groups.map((group) => (
-        <VoxelInstances
-          key={`${group.id}:${group.cells.length}`}
-          group={group}
-          geometry={geometry}
-          detailTexture={detailTexture}
-          quality={quality}
-          reduceMotion={reduceMotion}
-          transition={transition}
-          leaving={group.id === "leaving"}
-          onHover={onHover}
-        />
-      ))}
+      <group ref={spin}>
+        <CoordinateGuide grid={grid} showScale={interactive && !autoRotate} />
+        {groups.map((group) => (
+          <VoxelInstances
+            key={`${group.id}:${group.cells.length}`}
+            group={group}
+            geometry={geometry}
+            solidKeys={solidKeys}
+            quality={quality}
+            animateTransitions={animateTransitions}
+            transition={transition}
+            leaving={group.id === "leaving"}
+            onHover={onHover}
+          />
+        ))}
+        {burstId > 0 && !reduceMotion ? (
+          <BlockBurst key={burstId} burstId={burstId} cells={burstCells} />
+        ) : null}
+      </group>
     </>
   );
 }

@@ -58,4 +58,19 @@ describe("render resolution", () => {
       })
     ).toBe(1);
   });
+
+  it("renders chunky pixels in retro mode, but not in previews", () => {
+    const options = {
+      devicePixelRatio: 2,
+      mobile: false,
+      preview: false,
+      renderScale: "full" as const,
+      performanceReduced: false,
+    };
+    expect(calculateRenderDpr({ ...options, pixelSize: "3" })).toBeCloseTo(1 / 3);
+    expect(calculateRenderDpr({ ...options, pixelSize: "2" })).toBeCloseTo(0.5);
+    expect(
+      calculateRenderDpr({ ...options, preview: true, pixelSize: "3" })
+    ).toBeCloseTo(1);
+  });
 });

@@ -4,15 +4,18 @@ import {
   ReactNode,
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useSyncExternalStore,
 } from "react";
 
+import { setSfxOptions } from "@/lib/audio/sfx";
 import { SETTINGS_STORAGE_KEY } from "@/lib/progress";
 import {
   DEFAULT_SETTINGS,
   FrameRate,
   GraphicsQuality,
+  PixelSize,
   RenderScale,
   SettingsState,
   loadSettings,
@@ -24,6 +27,9 @@ interface SettingsContextValue {
   setGraphicsQuality: (quality: GraphicsQuality) => void;
   setRenderScale: (scale: RenderScale) => void;
   setFrameRate: (rate: FrameRate) => void;
+  setPixelSize: (size: PixelSize) => void;
+  setSound: (enabled: boolean) => void;
+  setVolume: (volume: number) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -85,9 +91,25 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setFrameRate: (frameRate) => {
         writeSettings({ ...readBrowserSettings(), frameRate });
       },
+      setPixelSize: (pixelSize) => {
+        writeSettings({ ...readBrowserSettings(), pixelSize });
+      },
+      setSound: (sound) => {
+        writeSettings({ ...readBrowserSettings(), sound });
+      },
+      setVolume: (volume) => {
+        writeSettings({
+          ...readBrowserSettings(),
+          volume: Math.min(1, Math.max(0, volume)),
+        });
+      },
     }),
     [settings]
   );
+
+  useEffect(() => {
+    setSfxOptions({ enabled: settings.sound, volume: settings.volume });
+  }, [settings.sound, settings.volume]);
 
   return (
     <SettingsContext.Provider value={value}>

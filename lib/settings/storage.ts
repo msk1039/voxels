@@ -3,6 +3,7 @@ import { SETTINGS_STORAGE_KEY } from "@/lib/progress";
 import {
   FrameRate,
   GraphicsQuality,
+  PixelSize,
   RenderScale,
   SettingsState,
 } from "./types";
@@ -12,6 +13,9 @@ export const DEFAULT_SETTINGS: SettingsState = {
   graphicsQuality: "auto",
   renderScale: "auto",
   frameRate: "auto",
+  pixelSize: "off",
+  sound: true,
+  volume: 0.6,
 };
 
 function isGraphicsQuality(value: unknown): value is GraphicsQuality {
@@ -29,6 +33,14 @@ function isRenderScale(value: unknown): value is RenderScale {
 
 function isFrameRate(value: unknown): value is FrameRate {
   return value === "auto" || value === "60" || value === "30";
+}
+
+function isPixelSize(value: unknown): value is PixelSize {
+  return value === "off" || value === "2" || value === "3";
+}
+
+function isVolume(value: unknown): value is number {
+  return typeof value === "number" && value >= 0 && value <= 1;
 }
 
 export function parseSettings(value: unknown): SettingsState {
@@ -55,6 +67,18 @@ export function parseSettings(value: unknown): SettingsState {
       "frameRate" in value && isFrameRate(value.frameRate)
         ? value.frameRate
         : DEFAULT_SETTINGS.frameRate,
+    pixelSize:
+      "pixelSize" in value && isPixelSize(value.pixelSize)
+        ? value.pixelSize
+        : DEFAULT_SETTINGS.pixelSize,
+    sound:
+      "sound" in value && typeof value.sound === "boolean"
+        ? value.sound
+        : DEFAULT_SETTINGS.sound,
+    volume:
+      "volume" in value && isVolume(value.volume)
+        ? value.volume
+        : DEFAULT_SETTINGS.volume,
   };
 }
 

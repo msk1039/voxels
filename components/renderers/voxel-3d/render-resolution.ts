@@ -1,4 +1,4 @@
-import { RenderScale } from "@/lib/settings";
+import { PixelSize, RenderScale } from "@/lib/settings";
 
 const RENDER_SCALE: Record<Exclude<RenderScale, "auto">, number> = {
   full: 1,
@@ -12,6 +12,8 @@ interface RenderDprOptions {
   preview: boolean;
   renderScale: RenderScale;
   performanceReduced: boolean;
+  /** Retro mode: each rendered pixel covers this many CSS pixels. */
+  pixelSize?: PixelSize;
 }
 
 export function calculateRenderDpr({
@@ -20,7 +22,10 @@ export function calculateRenderDpr({
   preview,
   renderScale,
   performanceReduced,
+  pixelSize = "off",
 }: RenderDprOptions) {
+  if (pixelSize !== "off" && !preview) return 1 / Number(pixelSize);
+
   const scale =
     renderScale === "auto"
       ? performanceReduced

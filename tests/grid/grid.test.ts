@@ -43,8 +43,21 @@ describe("grid engine", () => {
     }
   });
 
-  it("contains twelve levels in each track", () => {
-    expect(LEVELS.filter((level) => level.mode === "2d")).toHaveLength(12);
-    expect(LEVELS.filter((level) => level.mode === "3d")).toHaveLength(12);
+  it("contains twenty levels in each track", () => {
+    expect(LEVELS.filter((level) => level.mode === "2d")).toHaveLength(20);
+    expect(LEVELS.filter((level) => level.mode === "3d")).toHaveLength(20);
+  });
+
+  it("orders each track contiguously with unique ids and real targets", () => {
+    for (const mode of ["2d", "3d"] as const) {
+      const levels = LEVELS.filter((level) => level.mode === mode);
+      expect(new Set(levels.map((level) => level.id)).size).toBe(levels.length);
+      expect(levels.map((level) => level.order).sort((a, b) => a - b)).toEqual(
+        levels.map((_, index) => index + 1)
+      );
+      for (const level of levels) {
+        expect(level.target.size, level.title).toBeGreaterThan(0);
+      }
+    }
   });
 });

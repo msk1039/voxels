@@ -226,6 +226,165 @@ const planeSources: LevelSource[] = [
       "Inside the square, use y > 1 ? 2 : y < -1 ? 6 : 3.",
     ],
   },
+  {
+    id: "stripes",
+    mode: "2d",
+    order: 13,
+    title: "Stripes",
+    objective: "Paint alternating lapis and sand stripes inside a nine-by-nine square.",
+    concept: "Modulo with blocks",
+    starterExpression: "abs(x) <= 4 && abs(y) <= 4 ? 6 : 0",
+    solution: "abs(x) <= 4 && abs(y) <= 4 ? (abs(x) % 2 == 0 ? 6 : 3) : 0",
+    target: ({ x, y }) => {
+      if (Math.abs(x) > 4 || Math.abs(y) > 4) return 0;
+      return Math.abs(x) % 2 === 0 ? 6 : 3;
+    },
+    hints: [
+      "Inside the square, choose the block from whether x is even.",
+      "abs(x) % 2 == 0 is true on every other column, including x = 0.",
+    ],
+  },
+  {
+    id: "arrow",
+    mode: "2d",
+    order: 14,
+    title: "Arrow",
+    objective: "Build an arrow pointing right: a shaft and a triangular head.",
+    concept: "Joining two shapes",
+    starterExpression: "y == 0 && x <= 0",
+    solution: "(y == 0 && x >= -4 && x <= 0) || (x >= 1 && abs(y) <= 4 - x)",
+    target: ({ x, y }) =>
+      (y === 0 && x >= -4 && x <= 0) || (x >= 1 && Math.abs(y) <= 4 - x),
+    hints: [
+      "The shaft runs along y = 0 from x = -4 to x = 0.",
+      "The head gets thinner as x grows: abs(y) <= 4 - x for x >= 1.",
+    ],
+  },
+  {
+    id: "sun",
+    mode: "2d",
+    order: 15,
+    title: "Sun",
+    objective: "Place a sand sun with eight plank rays around it.",
+    concept: "Axes and diagonals",
+    starterExpression: "x*x + y*y <= 4 ? 3 : 0",
+    solution:
+      "x*x + y*y <= 4 ? 3 : (x == 0 || y == 0 || abs(x) == abs(y)) && x*x + y*y >= 13 && x*x + y*y <= 32 ? 1 : 0",
+    target: ({ x, y }) => {
+      const distance = x * x + y * y;
+      if (distance <= 4) return 3;
+      const onRay = x === 0 || y === 0 || Math.abs(x) === Math.abs(y);
+      return onRay && distance >= 13 && distance <= 32 ? 1 : 0;
+    },
+    hints: [
+      "Rays lie on the axes and on the diagonals, where abs(x) == abs(y).",
+      "Keep rays between squared distance 13 and 32 so they float off the sun.",
+    ],
+  },
+  {
+    id: "tree",
+    mode: "2d",
+    order: 16,
+    title: "Tree",
+    objective: "Grow a round grass canopy on top of a plank trunk.",
+    concept: "Shifted circles",
+    starterExpression: "x == 0 && y < -2 ? 1 : 0",
+    solution: "x*x + (y - 1)*(y - 1) <= 9 ? 4 : x == 0 && y < -2 ? 1 : 0",
+    target: ({ x, y }) => {
+      if (x * x + (y - 1) * (y - 1) <= 9) return 4;
+      return x === 0 && y < -2 ? 1 : 0;
+    },
+    hints: [
+      "The canopy is a disc of radius 3 centred on (0, 1).",
+      "Subtract 1 from y before squaring to move the circle up.",
+    ],
+  },
+  {
+    id: "house",
+    mode: "2d",
+    order: 17,
+    title: "House",
+    objective: "Build brick walls with a doorway under a plank roof.",
+    concept: "Cutting holes",
+    starterExpression: "abs(x) <= 3 && y <= -1 ? 2 : 0",
+    solution:
+      "y >= 0 && abs(x) <= 4 - y ? 1 : abs(x) <= 3 && y <= -1 && !(x == 0 && y <= -4) ? 2 : 0",
+    target: ({ x, y }) => {
+      if (y >= 0 && Math.abs(x) <= 4 - y) return 1;
+      const door = x === 0 && y <= -4;
+      return Math.abs(x) <= 3 && y <= -1 && !door ? 2 : 0;
+    },
+    hints: [
+      "The roof narrows as it rises: abs(x) <= 4 - y.",
+      "Use !( … ) to remove the two doorway cells at x = 0.",
+    ],
+  },
+  {
+    id: "sword",
+    mode: "2d",
+    order: 18,
+    title: "Sword",
+    objective: "Forge a diagonal sword: prismarine blade, sand guard, plank handle.",
+    concept: "Diagonal lines",
+    starterExpression: "x == y ? 5 : 0",
+    solution:
+      "x == y && x >= -1 ? 5 : x + y == -4 && abs(x - y) <= 4 ? 3 : x == y && x <= -3 ? 1 : 0",
+    target: ({ x, y }) => {
+      if (x === y && x >= -1) return 5;
+      if (x + y === -4 && Math.abs(x - y) <= 4) return 3;
+      return x === y && x <= -3 ? 1 : 0;
+    },
+    hints: [
+      "The blade and handle lie on x == y. The guard crosses it on x + y == -4.",
+      "Check the blade first, then the guard, then the handle.",
+    ],
+  },
+  {
+    id: "grumpy-face",
+    mode: "2d",
+    order: 19,
+    title: "Grumpy Face",
+    objective: "Build a grass face with lapis eyes and a frowning mouth.",
+    concept: "Nested conditions",
+    starterExpression: "abs(x) <= 4 && abs(y) <= 4 ? 4 : 0",
+    solution:
+      "abs(x) <= 4 && abs(y) <= 4 ? ((abs(x) >= 2 && abs(x) <= 3 && y >= 1 && y <= 2) || (abs(x) <= 1 && y <= -1 && y >= -3) || (abs(x) == 2 && y <= -2 && y >= -4) ? 6 : 4) : 0",
+    target: ({ x, y }) => {
+      if (Math.abs(x) > 4 || Math.abs(y) > 4) return 0;
+      const ax = Math.abs(x);
+      const eye = ax >= 2 && ax <= 3 && y >= 1 && y <= 2;
+      const mouth = ax <= 1 && y <= -1 && y >= -3;
+      const corner = ax === 2 && y <= -2 && y >= -4;
+      return eye || mouth || corner ? 6 : 4;
+    },
+    hints: [
+      "Start from the grass square, then pick lapis for any feature cell.",
+      "Using abs(x) mirrors each eye and mouth corner to both sides.",
+    ],
+  },
+  {
+    id: "rainbow",
+    mode: "2d",
+    order: 20,
+    title: "Rainbow",
+    objective: "Arc four bands of brick, planks, sand and grass over the horizon.",
+    concept: "Banded distance",
+    starterExpression: "y >= 0 && x*x + y*y <= 25 ? 2 : 0",
+    solution:
+      "y >= 0 && x*x + y*y <= 25 ? (x*x + y*y >= 20 ? 2 : x*x + y*y >= 13 ? 1 : x*x + y*y >= 8 ? 3 : x*x + y*y >= 4 ? 4 : 0) : 0",
+    target: ({ x, y }) => {
+      const distance = x * x + y * y;
+      if (y < 0 || distance > 25) return 0;
+      if (distance >= 20) return 2;
+      if (distance >= 13) return 1;
+      if (distance >= 8) return 3;
+      return distance >= 4 ? 4 : 0;
+    },
+    hints: [
+      "Every band is a range of squared distance, and only y >= 0 is kept.",
+      "From the outside in: 20–25 brick, 13–19 planks, 8–12 sand, 4–7 grass.",
+    ],
+  },
 ];
 
 const volumeSources: LevelSource[] = [
@@ -397,6 +556,161 @@ const volumeSources: LevelSource[] = [
     },
     hints: ["Use the squared distance for both boundaries.", "Inside radius 4, choose material 2 when squared distance is at most 4; otherwise choose 6."],
   },
+  {
+    id: "staircase",
+    mode: "3d",
+    order: 13,
+    title: "Staircase",
+    objective: "Build a five-wide staircase that climbs toward +x.",
+    concept: "Comparing two axes",
+    starterExpression: "abs(z) <= 2",
+    solution: "abs(z) <= 2 && y <= x",
+    target: ({ x, y, z }) => Math.abs(z) <= 2 && y <= x,
+    hints: [
+      "Each column along x is filled up to a height that grows with x.",
+      "Keep every cell whose y is at most its x.",
+    ],
+  },
+  {
+    id: "pavilion",
+    mode: "3d",
+    order: 14,
+    title: "Pavilion",
+    objective: "Raise four sand pillars under a flat brick roof.",
+    concept: "Pillars and slabs",
+    starterExpression: "y == 3 && abs(x) <= 4 && abs(z) <= 4 ? 2 : 0",
+    solution:
+      "y == 3 && abs(x) <= 4 && abs(z) <= 4 ? 2 : abs(x) == 3 && abs(z) == 3 && y < 3 ? 3 : 0",
+    target: ({ x, y, z }) => {
+      if (y === 3 && Math.abs(x) <= 4 && Math.abs(z) <= 4) return 2;
+      return Math.abs(x) === 3 && Math.abs(z) === 3 && y < 3 ? 3 : 0;
+    },
+    hints: [
+      "The pillars stand where abs(x) and abs(z) are both 3.",
+      "Check the roof first, then the pillars below it.",
+    ],
+  },
+  {
+    id: "arch",
+    mode: "3d",
+    order: 15,
+    title: "Arch",
+    objective: "Build a prismarine arch: a half ring standing on two legs.",
+    concept: "Conditions that switch shape",
+    starterExpression: "abs(z) <= 1 && x*x + y*y >= 9 && x*x + y*y <= 20 ? 5 : 0",
+    solution:
+      "abs(z) <= 1 && (y >= 0 ? x*x + y*y >= 9 && x*x + y*y <= 20 : abs(x) >= 3 && abs(x) <= 4) ? 5 : 0",
+    target: ({ x, y, z }) => {
+      if (Math.abs(z) > 1) return 0;
+      const distance = x * x + y * y;
+      const inside = y >= 0
+        ? distance >= 9 && distance <= 20
+        : Math.abs(x) >= 3 && Math.abs(x) <= 4;
+      return inside ? 5 : 0;
+    },
+    hints: [
+      "Above y = 0 the arch is a ring; below, it is two straight legs.",
+      "A ternary can choose between two conditions: y >= 0 ? ring : legs.",
+    ],
+  },
+  {
+    id: "beacon",
+    mode: "3d",
+    order: 16,
+    title: "Beacon",
+    objective: "Stack a stepped lapis base and shoot a prismarine beam into the sky.",
+    concept: "Stepped layers",
+    starterExpression: "x == 0 && z == 0 && y >= -2 ? 5 : 0",
+    solution:
+      "x == 0 && z == 0 && y >= -2 ? 5 : y <= -3 && max(abs(x), abs(z)) <= -2 - y ? 6 : 0",
+    target: ({ x, y, z }) => {
+      if (x === 0 && z === 0 && y >= -2) return 5;
+      return y <= -3 && Math.max(Math.abs(x), Math.abs(z)) <= -2 - y ? 6 : 0;
+    },
+    hints: [
+      "The base has three layers, each one block narrower than the one below.",
+      "At height y the base reaches out to max(abs(x), abs(z)) <= -2 - y.",
+    ],
+  },
+  {
+    id: "oak-tree",
+    mode: "3d",
+    order: 17,
+    title: "Oak Tree",
+    objective: "Grow a round leaf canopy on a plank trunk.",
+    concept: "Shifted spheres",
+    starterExpression: "x == 0 && z == 0 && y < 0 ? 1 : 0",
+    solution: "x*x + (y - 2)*(y - 2) + z*z <= 6 ? 4 : x == 0 && z == 0 && y < 0 ? 1 : 0",
+    target: ({ x, y, z }) => {
+      if (x * x + (y - 2) * (y - 2) + z * z <= 6) return 4;
+      return x === 0 && z === 0 && y < 0 ? 1 : 0;
+    },
+    hints: [
+      "The canopy is a sphere centred two blocks above the origin.",
+      "Squared distance to (0, 2, 0) is x*x + (y - 2)*(y - 2) + z*z.",
+    ],
+  },
+  {
+    id: "hut",
+    mode: "3d",
+    order: 18,
+    title: "Hut",
+    objective: "Build hollow brick walls with a door under a pyramid roof.",
+    concept: "Hollow shells with openings",
+    starterExpression: "y < 0 && max(abs(x), abs(z)) == 3 ? 2 : 0",
+    solution:
+      "y >= 0 && max(abs(x), abs(z)) <= 3 - y ? 1 : y < 0 && max(abs(x), abs(z)) == 3 && !(x == 0 && z == 3 && y <= -4) ? 2 : 0",
+    target: ({ x, y, z }) => {
+      const ring = Math.max(Math.abs(x), Math.abs(z));
+      if (y >= 0 && ring <= 3 - y) return 1;
+      const door = x === 0 && z === 3 && y <= -4;
+      return y < 0 && ring === 3 && !door ? 2 : 0;
+    },
+    hints: [
+      "Walls are the ring where max(abs(x), abs(z)) == 3.",
+      "The roof shrinks by one each layer; the door is two blocks at x = 0, z = 3.",
+    ],
+  },
+  {
+    id: "checker-cube",
+    mode: "3d",
+    order: 19,
+    title: "Checker Cube",
+    objective: "Build a seven-wide cube checkered in sand and brick.",
+    concept: "Three-axis parity",
+    starterExpression: "max(abs(x), abs(y), abs(z)) <= 3 ? 3 : 0",
+    solution: "max(abs(x), abs(y), abs(z)) <= 3 ? ((x + y + z) % 2 == 0 ? 3 : 2) : 0",
+    target: ({ x, y, z }) => {
+      if (Math.max(Math.abs(x), Math.abs(y), Math.abs(z)) > 3) return 0;
+      return (x + y + z) % 2 === 0 ? 3 : 2;
+    },
+    hints: [
+      "Neighbouring blocks differ by one in exactly one coordinate.",
+      "The parity of x + y + z flips between neighbours.",
+    ],
+  },
+  {
+    id: "geode",
+    mode: "3d",
+    order: 20,
+    title: "Geode",
+    objective: "Crack open a geode: lapis crust, amethyst lining, and a cherry core.",
+    concept: "Layered spheres with a cut",
+    starterExpression: "z <= 0 && x*x + y*y + z*z <= 25 ? 6 : 0",
+    solution:
+      "z <= 0 && x*x + y*y + z*z <= 25 ? (x*x + y*y + z*z >= 17 ? 6 : x*x + y*y + z*z >= 10 ? 7 : x*x + y*y + z*z <= 2 ? 8 : 0) : 0",
+    target: ({ x, y, z }) => {
+      const distance = x * x + y * y + z * z;
+      if (z > 0 || distance > 25) return 0;
+      if (distance >= 17) return 6;
+      if (distance >= 10) return 7;
+      return distance <= 2 ? 8 : 0;
+    },
+    hints: [
+      "Keep only z <= 0 so the inside faces the camera.",
+      "Crust 17–25, amethyst 10–16, hollow gap, then a core within 2.",
+    ],
+  },
 ];
 
 const sources = [...planeSources, ...volumeSources];
@@ -414,6 +728,28 @@ export const LEVELS: readonly LevelDefinition[] = sources.map(
       efficientCost ?? compileEquation(solution, level.mode).complexity,
   })
 );
+
+/** Each world is split into chapters of five levels. */
+export const CHAPTER_SIZE = 5;
+
+export const CHAPTERS: Readonly<Record<EquationMode, readonly string[]>> = {
+  "2d": ["Plains", "Desert", "Jungle", "Tundra"],
+  "3d": ["Caves", "Mountains", "Ocean", "Sky Islands"],
+};
+
+export const WORLD_NAMES: Readonly<Record<EquationMode, string>> = {
+  "2d": "Plane World",
+  "3d": "Volume World",
+};
+
+export function getChapterIndex(level: Pick<LevelDefinition, "order">) {
+  return Math.floor((level.order - 1) / CHAPTER_SIZE);
+}
+
+export function getChapterName(level: Pick<LevelDefinition, "mode" | "order">) {
+  const names = CHAPTERS[level.mode];
+  return names[Math.min(getChapterIndex(level), names.length - 1)];
+}
 
 export function getLevelsForMode(mode: EquationMode): LevelDefinition[] {
   return LEVELS.filter((level) => level.mode === mode).sort(

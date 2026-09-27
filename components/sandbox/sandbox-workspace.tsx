@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   EditorError,
   EquationEditor,
 } from "@/components/game/equation-editor";
+import { useProgress } from "@/components/progress/progress-provider";
 import { Grid2DRenderer } from "@/components/renderers/grid-2d/grid-2d-renderer";
 import { VoxelCanvas } from "@/components/renderers/voxel-3d/voxel-canvas";
 import { VoxelTransition } from "@/components/renderers/voxel-3d/types";
@@ -20,6 +21,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DEFAULT_GRID } from "@/content/levels";
 import { useGridWorker } from "@/hooks/use-grid-worker";
+import { playSfx } from "@/lib/audio/sfx";
 import { EquationError, EquationMode, getErrorLocation } from "@/lib/equation";
 import { CellMap, diffCellMaps } from "@/lib/grid";
 import { SANDBOX_STARTERS } from "@/lib/sandbox";
@@ -28,8 +30,10 @@ import { useSandboxDrafts } from "./use-sandbox-drafts";
 
 const EMPTY_CELLS: CellMap = new Map();
 
-export function SandboxWorkspace() {
-  const [mode, setMode] = useState<EquationMode>("2d");
+export function SandboxWorkspace({ remixEquation }: { remixEquation?: string }) {
+  const [mode, setMode] = useState<EquationMode>(remixEquation ? "3d" : "2d");
+  const { recordRun } = useProgress();
+  const [shakeKey, setShakeKey] = useState(0);
   const [results, setResults] = useState<Record<EquationMode, CellMap>>(() => ({
     "2d": new Map(),
     "3d": new Map(),
@@ -60,11 +64,13 @@ export function SandboxWorkspace() {
     setPendingMode(null);
   }, []);
 
-  async function runEquation() {
+  async function runEquation(sourceOverride?: string) {
     if (pendingMode) return;
     const runMode = mode;
-    const source = drafts.sources[runMode];
+    const source = sourceOverride ?? drafts.sources[runMode];
     setPendingMode(runMode);
+    playSfx("run");
+    recordRun({ context: "sandbox" });
 
     try {
       const evaluation = await runGrid(source, runMode, DEFAULT_GRID);
@@ -79,6 +85,7 @@ export function SandboxWorkspace() {
       const hasVoxelChanges =
         difference.enteringKeys.size > 0 || difference.leaving.length > 0;
 
+      playSfx("pop");
       if (runMode === "3d" && hasVoxelChanges) {
         const id = transitionId.current + 1;
         transitionId.current = id;
@@ -100,11 +107,29 @@ export function SandboxWorkspace() {
               column: 1,
             };
       setErrors((current) => ({ ...current, [runMode]: error }));
+      setShakeKey((value) => value + 1);
+      playSfx("error");
       activeTransitionId.current = null;
       setTransition(null);
       setPendingMode(null);
     }
   }
+
+  // Apply a remixed equation from the title screen once, then drop it from
+  // the URL so a reload keeps whatever the player changed.
+  const runRef = useRef(runEquation);
+  useEffect(() => {
+    runRef.current = runEquation;
+  });
+  useEffect(() => {
+    if (!remixEquation) return;
+    const timer = window.setTimeout(() => {
+      setSource("3d", remixEquation);
+      void runRef.current(remixEquation);
+      window.history.replaceState(null, "", "/sandbox");
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [remixEquation, setSource]);
 
   const result = results[mode];
 
@@ -114,7 +139,7 @@ export function SandboxWorkspace() {
         <div>
           <CardTitle>Sandbox</CardTitle>
           <CardDescription>
-            Create without a target, unlock requirement, or campaign score.
+            Build anything. No target, no locks, no score.
           </CardDescription>
         </div>
         <Tabs
@@ -133,7 +158,7 @@ export function SandboxWorkspace() {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="min-h-[460px] overflow-hidden rounded-lg border">
+          <div className="min-h-[460px] overflow-hidden pixel-well">
             {mode === "2d" ? (
               <Grid2DRenderer
                 grid={DEFAULT_GRID}
@@ -162,13 +187,13 @@ export function SandboxWorkspace() {
               </Badge>
               {hasRun[mode] ? (
                 <>
-                  <Badge variant="secondary">{result.size} voxels</Badge>
-                  <span className="text-xs text-muted-foreground">
-                    Complexity {complexity[mode]}
+                  <Badge variant="secondary">{result.size} blocks</Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Size {complexity[mode]}
                   </span>
                 </>
               ) : (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   Run the starter equation to begin.
                 </span>
               )}
@@ -178,8 +203,9 @@ export function SandboxWorkspace() {
               starterExpression={SANDBOX_STARTERS[mode]}
               error={errors[mode]}
               pending={pendingMode !== null}
+              shakeKey={shakeKey}
               onChange={(value) => setSource(mode, value)}
-              onRun={runEquation}
+              onRun={() => void runEquation()}
             />
           </div>
         </div>

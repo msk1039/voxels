@@ -1,8 +1,17 @@
-import { LevelCompletion, ProgressState } from "./types";
+import { LevelCompletion, ProgressState, ProgressStats, RunRecord } from "./types";
+
+export const EMPTY_STATS: ProgressStats = Object.freeze({
+  runs: 0,
+  failedRuns: 0,
+  hintsOpened: 0,
+  sandboxRuns: 0,
+});
 
 export const EMPTY_PROGRESS: ProgressState = Object.freeze({
-  schemaVersion: 1,
+  schemaVersion: 2,
   levels: Object.freeze({}),
+  stats: EMPTY_STATS,
+  achievements: Object.freeze({}),
 });
 
 export function levelProgressKey(mode: "2d" | "3d", levelId: string) {
@@ -19,7 +28,7 @@ export function applyLevelCompletion(
     completion.complexity < previous.bestComplexity;
 
   return {
-    schemaVersion: 1,
+    ...state,
     levels: {
       ...state.levels,
       [completion.levelKey]: {
@@ -41,6 +50,34 @@ export function applyLevelCompletion(
       },
     },
   };
+}
+
+export function recordRun(state: ProgressState, run: RunRecord): ProgressState {
+  const stats = { ...state.stats };
+  if (run.context === "sandbox") {
+    stats.sandboxRuns += 1;
+  } else {
+    stats.runs += 1;
+    if (!run.solved) stats.failedRuns += 1;
+  }
+  return { ...state, stats };
+}
+
+export function recordHintOpened(state: ProgressState): ProgressState {
+  return {
+    ...state,
+    stats: { ...state.stats, hintsOpened: state.stats.hintsOpened + 1 },
+  };
+}
+
+export function unlockAchievements(
+  state: ProgressState,
+  ids: readonly string[]
+): ProgressState {
+  if (ids.length === 0) return state;
+  const achievements = { ...state.achievements };
+  for (const id of ids) achievements[id] = true;
+  return { ...state, achievements };
 }
 
 export function countCompleted(

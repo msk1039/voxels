@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactElement, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Volume2, VolumeX } from "lucide-react";
 
 import { useProgress } from "@/components/progress/progress-provider";
 import { useSettings } from "@/components/settings/settings-provider";
@@ -33,7 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FrameRate, GraphicsQuality, RenderScale } from "@/lib/settings";
+import { playSfx } from "@/lib/audio/sfx";
+import { FrameRate, GraphicsQuality, PixelSize, RenderScale } from "@/lib/settings";
 
 interface SettingsDialogProps {
   trigger: ReactElement;
@@ -46,6 +47,9 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
     setGraphicsQuality,
     setRenderScale,
     setFrameRate,
+    setPixelSize,
+    setSound,
+    setVolume,
   } = useSettings();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -53,7 +57,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   function handleReset() {
     resetProgress();
     setConfirmOpen(false);
-    setMessage("Level progress was reset.");
+    setMessage("Progress was reset.");
   }
 
   return (
@@ -63,18 +67,19 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
-            Change local game settings and manage campaign progress.
+            Graphics, sound and saved progress for this browser.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="rounded-lg border p-3">
-            <div className="text-sm font-medium">Graphics quality</div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Auto uses full desktop effects and reduces them on smaller or
-              slower devices.
+          <div className="bg-black/25 p-3 [--pixel:2px] pixel-border">
+            <div className="font-display text-[10px] text-gold">Graphics</div>
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              Auto adds shadows on desktop and drops them on smaller or slower
+              devices. Pixel size renders the world chunkier, which is also
+              faster.
             </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="graphics-quality">Effects</Label>
                 <Select
@@ -152,14 +157,70 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="pixel-size">Pixel size</Label>
+                <Select
+                  value={settings.pixelSize}
+                  onValueChange={(value) => setPixelSize(value as PixelSize)}
+                >
+                  <SelectTrigger id="pixel-size" className="w-full">
+                    <SelectValue>
+                      {(value) => (value === "off" ? "Sharp" : `${value}× retro`)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="off">Sharp</SelectItem>
+                    <SelectItem value="2">2× retro</SelectItem>
+                    <SelectItem value="3">3× retro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-lg border p-3">
-            <div className="text-sm font-medium">Level progress</div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Clear completed levels, earned blocks, and best level equations.
-              Sandbox drafts and graphics settings stay unchanged.
+          <div className="bg-black/25 p-3 [--pixel:2px] pixel-border">
+            <div className="font-display text-[10px] text-gold">Sound</div>
+            <div className="mt-3 flex items-center gap-3">
+              <Button
+                variant={settings.sound ? "default" : "secondary"}
+                size="sm"
+                aria-pressed={settings.sound}
+                onClick={() => setSound(!settings.sound)}
+              >
+                {settings.sound ? (
+                  <Volume2 data-icon="inline-start" aria-hidden="true" />
+                ) : (
+                  <VolumeX data-icon="inline-start" aria-hidden="true" />
+                )}
+                {settings.sound ? "On" : "Off"}
+              </Button>
+              <Label htmlFor="volume" className="sr-only">
+                Volume
+              </Label>
+              <input
+                id="volume"
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={Math.round(settings.volume * 100)}
+                disabled={!settings.sound}
+                onChange={(event) => setVolume(Number(event.target.value) / 100)}
+                onPointerUp={() => playSfx("block")}
+                className="h-3 flex-1 cursor-pointer accent-gold disabled:opacity-40"
+              />
+              <span className="w-10 text-right font-mono text-lg tabular-nums">
+                {Math.round(settings.volume * 100)}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-black/25 p-3 [--pixel:2px] pixel-border">
+            <div className="font-display text-[10px] text-gold">Progress</div>
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              Erase cleared levels, earned blocks, XP, trophies and best
+              equations. Sandbox drafts and settings stay unchanged.
             </p>
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
               <AlertDialogTrigger
@@ -174,9 +235,9 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reset all level progress?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This clears completed levels, earned blocks, best scores, and
-                    saved level equations from this browser. Sandbox drafts and
-                    settings stay unchanged.
+                    This erases cleared levels, earned blocks, XP, trophies, best
+                    scores and saved level equations from this browser. Sandbox
+                    drafts and settings stay unchanged.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -188,7 +249,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          <p className="min-h-5 text-xs text-muted-foreground" aria-live="polite">
+          <p className="min-h-5 text-sm text-muted-foreground" aria-live="polite">
             {message}
           </p>
         </div>

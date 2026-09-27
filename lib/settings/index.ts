@@ -7,6 +7,7 @@ export {
 export type {
   FrameRate,
   GraphicsQuality,
+  PixelSize,
   RenderScale,
   SettingsState,
 } from "./types";

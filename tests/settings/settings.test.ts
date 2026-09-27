@@ -35,7 +35,31 @@ describe("local settings", () => {
       graphicsQuality: "high",
       renderScale: "auto",
       frameRate: "auto",
+      pixelSize: "off",
+      sound: true,
+      volume: 0.6,
     });
+  });
+
+  it("keeps valid pixel and sound settings and rejects bad ones", () => {
+    expect(
+      parseSettings({
+        schemaVersion: 1,
+        graphicsQuality: "auto",
+        pixelSize: "3",
+        sound: false,
+        volume: 0.25,
+      })
+    ).toMatchObject({ pixelSize: "3", sound: false, volume: 0.25 });
+    expect(
+      parseSettings({
+        schemaVersion: 1,
+        graphicsQuality: "auto",
+        pixelSize: "8",
+        sound: "yes",
+        volume: 4,
+      })
+    ).toMatchObject({ pixelSize: "off", sound: true, volume: 0.6 });
   });
 
   it("persists the selected render controls", () => {
@@ -45,6 +69,9 @@ describe("local settings", () => {
       graphicsQuality: "reduced",
       renderScale: "balanced",
       frameRate: "30",
+      pixelSize: "2",
+      sound: false,
+      volume: 0.4,
     });
 
     expect(storage.getItem(SETTINGS_STORAGE_KEY)).toContain("reduced");
@@ -53,6 +80,9 @@ describe("local settings", () => {
       graphicsQuality: "reduced",
       renderScale: "balanced",
       frameRate: "30",
+      pixelSize: "2",
+      sound: false,
+      volume: 0.4,
     });
   });
 });

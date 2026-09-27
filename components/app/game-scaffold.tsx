@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Box, CheckCircle2, Circle, Grid2X2 } from "lucide-react";
+import { ChevronRight, Lock, Map as MapIcon } from "lucide-react";
 
-import { SettingsDialog } from "@/components/app/settings-dialog";
+import { BlockIcon } from "@/components/blocks/block-icon";
+import { HeaderActions, Logo } from "@/components/app/app-header";
+import { PlayerHud } from "@/components/game/player-hud";
+import { CHAPTER_THEMES } from "@/components/map/chapter-themes";
+import { EarnedSlots } from "@/components/map/world-map";
 import { useProgress } from "@/components/progress/progress-provider";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -23,9 +25,17 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import {
+  CHAPTERS,
+  CHAPTER_SIZE,
+  WORLD_NAMES,
+  getChapterName,
+  getLevel,
+  getLevelsForMode,
+} from "@/content/levels";
+import { playSfx } from "@/lib/audio/sfx";
+import { countCompleted, isLevelUnlocked, levelProgressKey } from "@/lib/progress";
 import { cn } from "@/lib/utils";
-import { getLevelsForMode } from "@/content/levels";
-import { countCompleted, levelProgressKey } from "@/lib/progress";
 
 interface GameScaffoldProps {
   mode: "2d" | "3d";
@@ -35,85 +45,114 @@ interface GameScaffoldProps {
 
 export function GameScaffold({ mode, levelId, children }: GameScaffoldProps) {
   const { progress } = useProgress();
-  const Icon = mode === "2d" ? Grid2X2 : Box;
-  const trackName = mode === "2d" ? "Plane Lab" : "Volume Lab";
   const levels = getLevelsForMode(mode);
+  const level = getLevel(mode, levelId);
   const completed = countCompleted(progress, mode);
 
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader className="border-b p-3">
-          <Link href="/" className="flex h-8 items-center gap-2 px-2 font-medium">
-            <Icon className="size-4" aria-hidden="true" />
-            {trackName}
-          </Link>
+        <SidebarHeader className="border-b-[3px] border-border p-3">
+          <Logo className="h-8 px-1" />
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Levels</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {levels.map((level) => {
-                  const levelProgress =
-                    progress.levels[levelProgressKey(mode, level.id)];
-                  return (
-                    <SidebarMenuItem key={level.id}>
-                      <SidebarMenuButton
-                        render={<Link href={`/play/${mode}/${level.id}`} />}
-                        isActive={levelId === level.id}
-                      >
-                        {levelProgress?.completed ? (
-                          <CheckCircle2 aria-hidden="true" />
-                        ) : (
-                          <Circle className="size-2.5" aria-hidden="true" />
-                        )}
-                        <span>{level.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          {CHAPTERS[mode].map((chapter, chapterIndex) => (
+            <SidebarGroup key={chapter}>
+              <SidebarGroupLabel className="gap-2 font-display text-[9px] text-gold">
+                <BlockIcon
+                  material={CHAPTER_THEMES[mode][chapterIndex].block}
+                  className="size-4"
+                  title=""
+                />
+                {chapter}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {levels
+                    .slice(chapterIndex * CHAPTER_SIZE, (chapterIndex + 1) * CHAPTER_SIZE)
+                    .map((entry) => {
+                      const entryProgress =
+                        progress.levels[levelProgressKey(mode, entry.id)];
+                      const unlocked = isLevelUnlocked(entry, progress);
+                      return (
+                        <SidebarMenuItem key={entry.id}>
+                          {unlocked ? (
+                            <SidebarMenuButton
+                              render={
+                                <Link
+                                  href={`/play/${mode}/${entry.id}`}
+                                  onClick={() => playSfx("click")}
+                                />
+                              }
+                              isActive={levelId === entry.id}
+                            >
+                              <span className="w-5 text-right font-mono text-lg leading-none text-muted-foreground">
+                                {entry.order}
+                              </span>
+                              <span className="truncate">{entry.title}</span>
+                              <EarnedSlots
+                                earned={entryProgress?.earnedBlocks}
+                                className="ml-auto"
+                              />
+                            </SidebarMenuButton>
+                          ) : (
+                            <SidebarMenuButton
+                              aria-disabled="true"
+                              className="cursor-not-allowed opacity-50"
+                              onClick={() => playSfx("locked")}
+                            >
+                              <span className="w-5 text-right font-mono text-lg leading-none">
+                                {entry.order}
+                              </span>
+                              <span className="truncate">{entry.title}</span>
+                              <Lock className="ml-auto size-3.5" aria-label="Locked" />
+                            </SidebarMenuButton>
+                          )}
+                        </SidebarMenuItem>
+                      );
+                    })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
         </SidebarContent>
-        <SidebarFooter className="border-t p-3 text-xs text-muted-foreground">
-          Progress stays in this browser.
+        <SidebarFooter className="border-t-[3px] border-border p-3 font-mono text-lg leading-5 text-muted-foreground">
+          <span>
+            <span className="text-gold">{completed}</span>/{levels.length} cleared ·
+            saved in this browser
+          </span>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="min-w-0 bg-muted/20">
-        <header className="flex h-14 shrink-0 items-center border-b bg-background px-3">
+      <SidebarInset className="min-w-0 bg-transparent">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b-[3px] border-border bg-card/90 px-3">
           <SidebarTrigger />
-          <Separator orientation="vertical" className="mx-3 h-5" />
-          <span className="text-sm font-medium">{trackName}</span>
-          <Badge variant="outline" className="ml-3 hidden sm:inline-flex">
-            {completed} / {levels.length}
-          </Badge>
-          <nav className="ml-4 hidden items-center gap-1 sm:flex" aria-label="Game modes">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex min-w-0 items-center gap-1.5 text-sm"
+          >
             <Link
-              href="/play/2d/origin"
-              className={cn(buttonVariants({ variant: mode === "2d" ? "secondary" : "ghost", size: "sm" }))}
+              href={`/play/${mode}`}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "shrink-0")}
             >
-              2D
+              <MapIcon data-icon="inline-start" aria-hidden="true" />
+              {WORLD_NAMES[mode]}
             </Link>
-            <Link
-              href="/play/3d/slice"
-              className={cn(buttonVariants({ variant: mode === "3d" ? "secondary" : "ghost", size: "sm" }))}
-            >
-              3D
-            </Link>
-            <Link href="/sandbox" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
-              Sandbox
-            </Link>
+            {level ? (
+              <>
+                <ChevronRight className="hidden size-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
+                <span className="hidden shrink-0 text-muted-foreground sm:inline">
+                  {getChapterName(level)}
+                </span>
+                <ChevronRight className="hidden size-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
+                <span className="truncate font-semibold" aria-current="page">
+                  {level.order}. {level.title}
+                </span>
+              </>
+            ) : null}
           </nav>
-          <div className="ml-auto">
-            <SettingsDialog
-              trigger={
-                <Button variant="outline" size="sm">
-                  Settings
-                </Button>
-              }
-            />
+          <div className="ml-auto flex items-center gap-3">
+            <PlayerHud className="hidden lg:flex" />
+            <HeaderActions />
           </div>
         </header>
         <main className="min-h-0 flex-1 p-3 sm:p-4">{children}</main>

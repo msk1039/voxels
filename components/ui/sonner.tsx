@@ -1,16 +1,13 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const Toaster = ({ className, style, ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="dark"
       className={cn("toaster group", className)}
       icons={{
         success: (
@@ -38,7 +35,8 @@ const Toaster = ({ className, style, ...props }: ToasterProps) => {
         } as React.CSSProperties}
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: "cn-toast pixel-panel! font-sans! text-base!",
+          title: "font-semibold!",
         },
       }}
       {...props}

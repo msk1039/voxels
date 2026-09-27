@@ -1,23 +1,21 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
 import {
-  Color,
+  BoxGeometry,
   Euler,
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
   Quaternion,
   Vector3,
-  DataTexture,
 } from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
-import { MATCH_COLORS, getMaterialColor } from "@/lib/materials";
 import { coordinateKey } from "@/lib/grid";
 
-import { StylizedVoxelMaterial } from "./stylized-voxel-material";
+import { BlockMaterial } from "./block-material";
+import { computeNeighborMask } from "./neighbor-mask";
 import {
   HoveredVoxel,
   RenderQuality,
@@ -27,14 +25,17 @@ import {
 import {
   enteringVoxelScale,
   exitingVoxelScale,
+  quantizeVoxelScale,
 } from "./voxel-transition";
 
 interface VoxelInstancesProps {
   group: VoxelGroup;
-  geometry: RoundedBoxGeometry;
-  detailTexture?: DataTexture;
+  geometry: BoxGeometry;
+  /** Keys of every solid block in the scene, for ambient occlusion. */
+  solidKeys: ReadonlySet<string>;
   quality: RenderQuality;
-  reduceMotion: boolean;
+  /** Whether block pop animations play, decided by the canvas. */
+  animateTransitions: boolean;
   transition?: VoxelTransition;
   leaving?: boolean;
   onHover: (hovered: HoveredVoxel | null) => void;
@@ -44,45 +45,49 @@ const matrix = new Matrix4();
 const position = new Vector3();
 const scale = new Vector3();
 const rotation = new Quaternion().setFromEuler(new Euler(0, 0, 0));
-const color = new Color();
-
-function colorFor(group: VoxelGroup, index: number) {
-  const cell = group.cells[index];
-  switch (group.appearance) {
-    case "material":
-      return getMaterialColor(cell.material);
-    case "correct":
-      return MATCH_COLORS.correct;
-    case "missing":
-      return MATCH_COLORS.missing;
-    case "extra":
-      return MATCH_COLORS.extra;
-    case "wrong":
-      return MATCH_COLORS.wrongMaterial;
-  }
-}
 
 export function VoxelInstances({
   group,
   geometry,
-  detailTexture,
+  solidKeys,
   quality,
-  reduceMotion,
+  animateTransitions,
   transition,
   leaving = false,
   onHover,
 }: VoxelInstancesProps) {
   const mesh = useRef<InstancedMesh>(null);
   const animationStart = useRef<number | null>(null);
-  const animate = Boolean(transition) && !reduceMotion && quality === "high";
+  const animate = Boolean(transition) && animateTransitions;
   const animationDone = useRef(!animate);
-  const instanceColors = useMemo(() => {
-    const values = new Float32Array(group.cells.length * 3);
-    group.cells.forEach((_, index) => {
-      color.set(colorFor(group, index)).toArray(values, index * 3);
-    });
-    return new InstancedBufferAttribute(values, 3);
-  }, [group]);
+  const blockAttribute = useMemo(
+    () =>
+      new InstancedBufferAttribute(
+        Float32Array.from(group.cells, (cell) => cell.material),
+        1
+      ),
+    [group]
+  );
+  const neighborAttribute = useMemo(() => {
+    const values = new Float32Array(group.cells.length * 2);
+    // Ghost blocks are see-through glass and stay unshaded.
+    if (!group.ghost) {
+      group.cells.forEach((cell, index) => {
+        values.set(computeNeighborMask(cell, solidKeys), index * 2);
+      });
+    }
+    return new InstancedBufferAttribute(values, 2);
+  }, [group, solidKeys]);
+  // Instanced attributes live on the geometry, so each mesh gets its own
+  // copy of the shared 24-vertex box.
+  const instancedGeometry = useMemo(() => {
+    const copy = geometry.clone();
+    copy.setAttribute("aBlock", blockAttribute);
+    copy.setAttribute("aNeighbors", neighborAttribute);
+    return copy;
+  }, [blockAttribute, geometry, neighborAttribute]);
+
+  useEffect(() => () => instancedGeometry.dispose(), [instancedGeometry]);
 
   useLayoutEffect(() => {
     const current = mesh.current;
@@ -100,7 +105,7 @@ export function VoxelInstances({
     current.computeBoundingSphere();
     animationStart.current = null;
     animationDone.current = !animate;
-  }, [animate, group, leaving, transition]);
+  }, [animate, group, instancedGeometry, leaving, transition]);
 
   useFrame(({ clock }) => {
     const current = mesh.current;
@@ -115,17 +120,15 @@ export function VoxelInstances({
       const entering = transition?.enteringKeys.has(coordinateKey(cell));
       let amount = 1;
       if (leaving && transition) {
-        amount = exitingVoxelScale(
-          elapsed,
-          cell,
-          transition.maxLeavingDistance
+        amount = quantizeVoxelScale(
+          exitingVoxelScale(elapsed, cell, transition.maxLeavingDistance),
+          "out"
         );
         if (amount > 0) complete = false;
       } else if (entering && transition) {
-        amount = enteringVoxelScale(
-          elapsed,
-          cell,
-          transition.maxEnteringDistance
+        amount = quantizeVoxelScale(
+          enteringVoxelScale(elapsed, cell, transition.maxEnteringDistance),
+          "in"
         );
         if (amount < 1) complete = false;
       }
@@ -147,16 +150,17 @@ export function VoxelInstances({
   return (
     <instancedMesh
       ref={mesh}
-      args={[geometry, undefined, group.cells.length]}
-      instanceColor={instanceColors}
+      args={[undefined, undefined, group.cells.length]}
+      geometry={instancedGeometry}
       castShadow={quality === "high" && !group.ghost}
       receiveShadow={quality === "high" && !group.ghost}
       dispose={null}
       onPointerMove={quality === "high" ? handlePointerMove : undefined}
       onPointerOut={quality === "high" ? () => onHover(null) : undefined}
     >
-      <StylizedVoxelMaterial
-        detailTexture={detailTexture}
+      <BlockMaterial
+        key={group.appearance}
+        appearance={group.appearance}
         ghost={group.ghost}
         quality={quality}
       />
